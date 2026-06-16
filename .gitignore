@@ -1,0 +1,5 @@
+godot-cpp/
+.vs/
+
+# Specific Files
+.sconsign.dblite
