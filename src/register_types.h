@@ -1,7 +1,11 @@
-#pragma once
+#ifndef GDEXAMPLE_REGISTER_TYPES_H
+#define GDEXAMPLE_REGISTER_TYPES_H
 
 #include <godot_cpp/core/class_db.hpp>
 
-// Funções que o Godot vai chamar ao carregar e descarregar o plugin
-void initialize_flow_ai_module(godot::ModuleInitializationLevel p_level);
-void uninitialize_flow_ai_module(godot::ModuleInitializationLevel p_level);
+using namespace godot;
+
+void initialize_flow_ai_module(ModuleInitializationLevel p_level);
+void uninitialize_flow_ai_module(ModuleInitializationLevel p_level);
+
+#endif
