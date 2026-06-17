@@ -1,0 +1,1 @@
+start python -m SCons platform=windows target=template_debug -j6

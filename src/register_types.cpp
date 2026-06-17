@@ -1,13 +1,14 @@
 #include "register_types.h"
 
 #include "FlowAI.hpp"
-#include "FlowAIEditor.hpp"
+#include "editor/FlowAIEditor.hpp"
 
 #include <gdextension_interface.h>
-#include <godot_cpp/core/defs.hpp>
 #include <godot_cpp/godot.hpp>
+#include <godot_cpp/core/defs.hpp>
 
 using namespace godot;
+using namespace FlowAI;
 
 void initialize_flow_ai_module(ModuleInitializationLevel p_level) {
     if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -18,6 +19,8 @@ void initialize_flow_ai_module(ModuleInitializationLevel p_level) {
 
     if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
         GDREGISTER_CLASS(FlowAIEditorPlugin);
+        GDREGISTER_CLASS(FlowAIPathnodeInspector);
+
         EditorPlugins::add_by_type<FlowAIEditorPlugin>();
     }
 }
