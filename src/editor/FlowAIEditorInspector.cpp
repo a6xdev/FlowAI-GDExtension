@@ -49,8 +49,13 @@ namespace FlowAI {
         FlowAIPathnode* target_pathnode = Object::cast_to<FlowAIPathnode>(target_node);
         if (!target_pathnode) return;
 
+        // Get the pathnode manager
+        FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_pathnode->get_parent());
+
         String prev_node_id_text = (target_pathnode->get_prev_node_id() == -1) ? "Nill" : String::num_int64(target_pathnode->get_prev_node_id());
         String sector_id_text = (target_pathnode->get_sector_id() == -1) ? "Nill" : String::num_int64(target_pathnode->get_sector_id());
+        PackedInt32Array pathnode_links_id = target_pathnode->get_links();
+        std::vector<FlowAIPathnode*> pathnodes_list = manager->_get_arr_pathnode_list();
 
         Label* lbl_id = memnew(Label);
         Label* lbl_prev_node_id = memnew(Label);
@@ -69,10 +74,13 @@ namespace FlowAI {
 
         // Show all nodes kinked to the selected pathnode
         for (auto link_id : target_pathnode->get_links()) {
-            Label* lbl_link = memnew(Label);
-            String item_text = String("  >  [") + String::num_int64(link_id) + "]: Connected Node";
-            lbl_link->set_text(item_text);
-            lbl_links_vbox_container->add_child(lbl_link);
+            FlowAIPathnode* link_pathnode_ref = pathnodes_list[link_id - 1]; // An array always start in index 0. HA!
+            if (link_pathnode_ref) {
+                Label* lbl_link = memnew(Label);
+                String item_text = String("  >  [") + String::num_int64(link_id) + "]: " + String(link_pathnode_ref->get_name());
+                lbl_link->set_text(item_text);
+                lbl_links_vbox_container->add_child(lbl_link);
+            }
         }
 
         btn_add->connect("pressed", Callable(this, "_pathnode_add_next_pathnode"));

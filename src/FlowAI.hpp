@@ -9,6 +9,8 @@
 #include <godot_cpp/classes/scene_tree.hpp>
 #include <godot_cpp/classes/node.hpp>
 #include <godot_cpp/classes/node3d.hpp>
+#include <godot_cpp/classes/marker3d.hpp>
+#include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -16,11 +18,14 @@
 using namespace godot;
 
 namespace FlowAI {
-	class FlowAIPathnode : public Node3D {
-		GDCLASS(FlowAIPathnode, Node3D)
+	// Why a Marker3D and not a Node3D? because is more easy select an marker3D in Godot Editor.
+	class FlowAIPathnode : public Marker3D {
+		GDCLASS(FlowAIPathnode, Marker3D)
 	public:
 		FlowAIPathnode();
 		~FlowAIPathnode();
+
+		void _enter_tree() override;
 
 		void add_next_pathnode();
 		void snap_to_ground();
@@ -43,6 +48,8 @@ namespace FlowAI {
 		uint32_t context_layers; // bitmask (ex: Pedestrian, Vehicle, Crosswalk, etc)
 		float corridor_width = 1.0;
 		PackedInt32Array links;
+
+		MeshInstance3D* mesh_preview = nullptr;
 	};
 
 	// ----------------------------------------- //
@@ -57,12 +64,12 @@ namespace FlowAI {
 		void _process(double delta) override {};
 
 		void add_new_pathnode(int32_t prev_pathnode_id = -1);
+
+		std::vector<FlowAIPathnode*> _get_arr_pathnode_list();
 	protected:
 		static void _bind_methods();
 	private:
 		std::unordered_map<uint32_t, FlowAIPathnode*> _pathnodes_database;
-
-		std::vector<FlowAIPathnode*> _arr_get_pathnode_list();
 		uint32_t _get_available_pathnode_id();
 	};
 

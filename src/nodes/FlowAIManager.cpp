@@ -49,13 +49,11 @@ namespace FlowAI {
 			}
 		}
 		
-
 		UtilityFunctions::print("Added new pathnode.");
 		return;
 	}
 
-	// PRIVATE
-	std::vector<FlowAIPathnode*> FlowAIManager::_arr_get_pathnode_list() {
+	std::vector<FlowAIPathnode*> FlowAIManager::_get_arr_pathnode_list() {
 		TypedArray<Node> my_children = get_children();
 		std::vector<FlowAIPathnode*> arr_pathnode_list;
 		_pathnodes_database.clear(); // Clear to get the updated list
@@ -70,9 +68,10 @@ namespace FlowAI {
 
 		return arr_pathnode_list;
 	}
+	// PRIVATE
 
 	uint32_t FlowAIManager::_get_available_pathnode_id() {
-		std::vector<FlowAIPathnode*> arr_pathnodes_list = _arr_get_pathnode_list();
+		std::vector<FlowAIPathnode*> arr_pathnodes_list = _get_arr_pathnode_list();
 		uint32_t counter_id = 0;
 
 		while (true) {
