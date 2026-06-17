@@ -26,7 +26,7 @@ namespace FlowAI {
 		void snap_to_ground();
 
 		void set_id(int32_t _id) { id = _id; };
-		void set_prev_pathnode_id(int32_t _id) { prev_pathnode_id = _id; };
+		void set_prev_node_id(int32_t _id) { prev_pathnode_id = _id; };
 		void set_sector_id(int32_t _id) { sector_id = _id; };
 		void set_links(PackedInt32Array _links) { links = _links; };
 

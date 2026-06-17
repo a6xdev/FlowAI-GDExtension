@@ -19,7 +19,7 @@ void initialize_flow_ai_module(ModuleInitializationLevel p_level) {
 
     if (p_level == MODULE_INITIALIZATION_LEVEL_EDITOR) {
         GDREGISTER_CLASS(FlowAIEditorPlugin);
-        GDREGISTER_CLASS(FlowAIPathnodeInspector);
+        GDREGISTER_CLASS(FlowAIEditorInspector);
 
         EditorPlugins::add_by_type<FlowAIEditorPlugin>();
     }

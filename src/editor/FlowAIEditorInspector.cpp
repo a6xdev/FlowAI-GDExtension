@@ -4,18 +4,49 @@
 using namespace godot;
 
 namespace FlowAI {
-    // FlowAIPathnode
-    void FlowAIPathnodeInspector::_bind_methods() {
-        ClassDB::bind_method(D_METHOD("_on_add_next_pressed"), &FlowAIPathnodeInspector::_on_add_next_pressed);
-        ClassDB::bind_method(D_METHOD("_on_snap_ground_pressed"), &FlowAIPathnodeInspector::_on_snap_ground_pressed);
+    // ----------------------- //
+    //      FlowAIPathnode
+    // ----------------------- //
+    void FlowAIEditorInspector::_bind_methods() {
+        ClassDB::bind_method(D_METHOD("_manager_add_new_pathnode"), &FlowAIEditorInspector::_manager_add_new_pathnode);
+        ClassDB::bind_method(D_METHOD("_pathnode_add_next_pathnode"), &FlowAIEditorInspector::_pathnode_add_next_pathnode);
+        ClassDB::bind_method(D_METHOD("_pathnode_snap_to_ground"), &FlowAIEditorInspector::_pathnode_snap_to_ground);
     }
 
-    bool FlowAIPathnodeInspector::_can_handle(Object* p_object) const {
-        return p_object->is_class("FlowAIPathnode");
+    bool FlowAIEditorInspector::_can_handle(Object* p_object) const {
+        if (p_object == nullptr) return false;
+        bool is_manager = Object::cast_to<FlowAIManager>(p_object) != nullptr;
+        bool is_pathnode = Object::cast_to<FlowAIPathnode>(p_object) != nullptr;
+        return is_manager || is_pathnode;
     }
 
-    void FlowAIPathnodeInspector::_parse_begin(Object* p_object) {
-        target_pathnode = Object::cast_to<FlowAIPathnode>(p_object);
+    void FlowAIEditorInspector::_parse_begin(Object* p_object) {
+        if (p_object == nullptr) return;
+
+        target_node = p_object;
+        if (FlowAIManager* manager = Object::cast_to<FlowAIManager>(p_object)) {
+            _parse_manager(manager);
+            return;
+        }
+
+        if (FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(p_object)) {
+            _parse_pathnode(pathnode);
+            return;
+        }
+    }
+
+    void FlowAIEditorInspector::_parse_manager(Object* target_node) {
+        FlowAIManager* target_manager = Object::cast_to<FlowAIManager>(target_node);
+        if (!target_manager) return;
+
+        Button* btn_add_new_pathnode = memnew(Button);
+        btn_add_new_pathnode->set_text("Add New Pathnode");
+        btn_add_new_pathnode->connect("pressed", Callable(this, "_manager_add_new_pathnode"));
+        add_custom_control(btn_add_new_pathnode);
+    }
+
+    void FlowAIEditorInspector::_parse_pathnode(Object* target_node) {
+        FlowAIPathnode* target_pathnode = Object::cast_to<FlowAIPathnode>(target_node);
         if (!target_pathnode) return;
 
         String prev_node_id_text = (target_pathnode->get_prev_node_id() == -1) ? "Nill" : String::num_int64(target_pathnode->get_prev_node_id());
@@ -44,8 +75,8 @@ namespace FlowAI {
             lbl_links_vbox_container->add_child(lbl_link);
         }
 
-        btn_add->connect("pressed", Callable(this, "_on_add_next_pressed"));
-        btn_snap->connect("pressed", Callable(this, "_on_snap_ground_pressed"));
+        btn_add->connect("pressed", Callable(this, "_pathnode_add_next_pathnode"));
+        btn_snap->connect("pressed", Callable(this, "_pathnode_snap_to_ground"));
 
         add_custom_control(lbl_id);
         add_custom_control(lbl_prev_node_id);
@@ -56,13 +87,21 @@ namespace FlowAI {
         add_custom_control(btn_snap);
     }
 
-    void FlowAIPathnodeInspector::_on_add_next_pressed() {
-        if (target_pathnode) target_pathnode->add_next_pathnode();
+    void FlowAIEditorInspector::_manager_add_new_pathnode() {
+        if (FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_node)) {
+            manager->add_new_pathnode();
+        }
     }
 
-    void FlowAIPathnodeInspector::_on_snap_ground_pressed() {
-        if (target_pathnode) target_pathnode->snap_to_ground();
+    void FlowAIEditorInspector::_pathnode_add_next_pathnode() {
+        if (FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(target_node)) {
+            pathnode->add_next_pathnode();
+        }
     }
 
-    // FlowAIManager
+    void FlowAIEditorInspector::_pathnode_snap_to_ground() {
+        if (FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(target_node)) {
+            pathnode->snap_to_ground();
+        }
+    }
 }

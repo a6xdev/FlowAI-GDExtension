@@ -13,27 +13,29 @@ using namespace godot;
 
 namespace FlowAI {
 	// Nodes Inspector
-	class FlowAIPathnodeInspector : public EditorInspectorPlugin {
-		GDCLASS(FlowAIPathnodeInspector, EditorInspectorPlugin)
+	class FlowAIEditorInspector : public EditorInspectorPlugin {
+		GDCLASS(FlowAIEditorInspector, EditorInspectorPlugin)
 	public:
 		bool _can_handle(Object* p_object) const override;
 		void _parse_begin(Object* p_object) override;
-		void _on_add_next_pressed();
-		void _on_snap_ground_pressed();
-	private:
-		FlowAIPathnode* target_pathnode = nullptr;
 	protected:
 		static void _bind_methods();
+	private:
+		Object* target_node = nullptr;
+
+		void _parse_manager(Object* target_node);
+		void _parse_pathnode(Object* target_node);
+		void _manager_add_new_pathnode();
+		void _pathnode_add_next_pathnode();
+		void _pathnode_snap_to_ground();
 	};
 
 	// FlowAI Editor
 	class FlowAIEditorPlugin : public EditorPlugin {
 		GDCLASS(FlowAIEditorPlugin, EditorPlugin)
 	private:
-		Button* btn_new_pathnode = nullptr;
-
-		FlowAIManager* manager_selected = nullptr;
-		Ref<FlowAIPathnodeInspector> pathnode_inspector;
+		Object* node_selected = nullptr;
+		Ref<FlowAIEditorInspector> flowai_inspector;
 	protected:
 		static void _bind_methods();
 	public:
@@ -43,10 +45,7 @@ namespace FlowAI {
 		virtual bool _handles(Object* p_object) const override;
 		virtual void _make_visible(bool p_visible) override;
 		virtual void _edit(Object* p_object) override;
-
-		void _on_create_new_pathnode_pressed();
 	};
-
 }
 
 #endif

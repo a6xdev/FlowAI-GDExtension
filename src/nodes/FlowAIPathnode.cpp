@@ -10,11 +10,23 @@ namespace FlowAI {
 	FlowAIPathnode::~FlowAIPathnode() {};
 
 	void FlowAIPathnode::_bind_methods() {
-		ClassDB::bind_method(D_METHOD("add_next_pathnode"), &FlowAIPathnode::add_next_pathnode);
-		ClassDB::bind_method(D_METHOD("snap_to_ground"), &FlowAIPathnode::snap_to_ground);
+		ClassDB::bind_method(D_METHOD("set_id"), &FlowAIPathnode::set_id);
+		ClassDB::bind_method(D_METHOD("set_prev_node_id"), &FlowAIPathnode::set_prev_node_id);
+		ClassDB::bind_method(D_METHOD("set_sector_id"), &FlowAIPathnode::set_sector_id);
+		ClassDB::bind_method(D_METHOD("set_links"), &FlowAIPathnode::set_links);
+
 		ClassDB::bind_method(D_METHOD("get_id"), &FlowAIPathnode::get_id);
 		ClassDB::bind_method(D_METHOD("get_prev_node_id"), &FlowAIPathnode::get_prev_node_id);
+		ClassDB::bind_method(D_METHOD("get_sector_id"), &FlowAIPathnode::get_sector_id);
 		ClassDB::bind_method(D_METHOD("get_links"), &FlowAIPathnode::get_links);
+
+		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::INT, "id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_id", "get_id");
+		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::INT, "prev_pathnode_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_prev_node_id", "get_prev_node_id");
+		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::INT, "sector_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_sector_id", "get_sector_id");
+		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::PACKED_INT32_ARRAY, "links", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_links", "get_links");
+
+		ClassDB::bind_method(D_METHOD("add_next_pathnode"), &FlowAIPathnode::add_next_pathnode);
+		ClassDB::bind_method(D_METHOD("snap_to_ground"), &FlowAIPathnode::snap_to_ground);
 	}
 
 	void FlowAIPathnode::add_next_pathnode() {

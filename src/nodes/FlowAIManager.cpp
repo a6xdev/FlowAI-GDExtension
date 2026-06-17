@@ -34,7 +34,7 @@ namespace FlowAI {
 				FlowAIPathnode* prev_pathnode = Object::cast_to<FlowAIPathnode>(it->second);
 				if (prev_pathnode) {
 					PackedInt32Array prev_node_links_arr = prev_pathnode->get_links();
-					new_pathnode->set_prev_pathnode_id(prev_pathnode->get_id());
+					new_pathnode->set_prev_node_id(prev_pathnode->get_id());
 					new_pathnode->set_position(prev_pathnode->get_position());
 					prev_node_links_arr.append(unique_id);
 					prev_pathnode->set_links(prev_node_links_arr);
