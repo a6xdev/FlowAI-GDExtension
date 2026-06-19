@@ -53,13 +53,11 @@ namespace FlowAI {
         FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_pathnode->get_parent());
 
         String prev_node_id_text = (target_pathnode->get_prev_node_id() == -1) ? "Nill" : String::num_int64(target_pathnode->get_prev_node_id());
-        String sector_id_text = (target_pathnode->get_sector_id() == -1) ? "Nill" : String::num_int64(target_pathnode->get_sector_id());
         PackedInt32Array pathnode_links_id = target_pathnode->get_links();
-        std::vector<FlowAIPathnode*> pathnodes_list = manager->_get_arr_pathnode_list();
+        std::vector<FlowAIPathnode*> pathnodes_list = manager->get_pathnode_list();
 
         Label* lbl_id = memnew(Label);
         Label* lbl_prev_node_id = memnew(Label);
-        Label* lbl_sector = memnew(Label);
         Label* lbl_links_title = memnew(Label);
         VBoxContainer* lbl_links_vbox_container = memnew(VBoxContainer);
         Button* btn_add = memnew(Button);
@@ -67,7 +65,6 @@ namespace FlowAI {
 
         lbl_id->set_text("Pathnode ID: " + String::num_int64(target_pathnode->get_id()));
         lbl_prev_node_id->set_text("Previous Pathnode ID: " + prev_node_id_text);
-        lbl_sector->set_text("Sector ID: " + sector_id_text);
         lbl_links_title->set_text("Links: [Array] - " + String::num_int64(target_pathnode->get_links().size()));
         btn_add->set_text("Add Next Pathnode");
         btn_snap->set_text("Snap to Ground");
@@ -88,7 +85,6 @@ namespace FlowAI {
 
         add_custom_control(lbl_id);
         add_custom_control(lbl_prev_node_id);
-        add_custom_control(lbl_sector);
         add_custom_control(lbl_links_title);
         if (!target_pathnode->get_links().is_empty()) add_custom_control(lbl_links_vbox_container);
         add_custom_control(btn_add);

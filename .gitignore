@@ -5,3 +5,4 @@ flow_ai_project/
 # Specific Files
 *.sconsign.dblite
 *.obj
+CppProperties.json

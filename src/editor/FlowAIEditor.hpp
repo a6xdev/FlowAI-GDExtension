@@ -2,6 +2,7 @@
 #define FLOW_AI_EDITOR_PLUGIN_H
 
 #include <godot_cpp/classes/editor_inspector.hpp>
+#include <godot_cpp/classes/editor_property.hpp>
 #include <godot_cpp/classes/editor_inspector_plugin.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/editor_plugin.hpp>
@@ -18,6 +19,7 @@ namespace FlowAI {
 	public:
 		bool _can_handle(Object* p_object) const override;
 		void _parse_begin(Object* p_object) override;
+
 	protected:
 		static void _bind_methods();
 	private:
@@ -33,11 +35,6 @@ namespace FlowAI {
 	// FlowAI Editor
 	class FlowAIEditorPlugin : public EditorPlugin {
 		GDCLASS(FlowAIEditorPlugin, EditorPlugin)
-	private:
-		Object* node_selected = nullptr;
-		Ref<FlowAIEditorInspector> flowai_inspector;
-	protected:
-		static void _bind_methods();
 	public:
 		FlowAIEditorPlugin();
 		~FlowAIEditorPlugin();
@@ -45,6 +42,13 @@ namespace FlowAI {
 		virtual bool _handles(Object* p_object) const override;
 		virtual void _make_visible(bool p_visible) override;
 		virtual void _edit(Object* p_object) override;
+	protected:
+		static void _bind_methods();
+	private:
+		Object* node_selected = nullptr;
+		Ref<FlowAIEditorInspector> flowai_inspector;
+
+		void _setup_project_settings();
 	};
 }
 
