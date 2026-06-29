@@ -17,6 +17,8 @@
 #include <unordered_map>
 #include <string>
 
+#include "resources/FlowAIBakeData.hpp"
+
 using namespace godot;
 
 namespace FlowAI {
@@ -41,14 +43,14 @@ namespace FlowAI {
 		void set_prev_node_id(int32_t _id) { prev_pathnode_id = _id; };
 		void set_links(PackedInt32Array _links) { links = _links; };
 		void set_path_layers(uint32_t p_layers); // Needs update preview mesh color in cpp.
-		void set_sector(FlowAISector _sector) { sector_ref = _sector; };
+		void set_sector_coord(Vector2i _sector) { sector_coord = _sector; };
 		void set_bidirectional(bool _value) { m_bidirectional = _value; };
 
 		int32_t get_id() const { return id; };
 		int32_t get_prev_node_id() const { return prev_pathnode_id; };
 		PackedInt32Array get_links() const { return links; };
 		uint32_t get_path_layers() const { return path_layers; }
-		FlowAISector get_sector() const { return sector_ref; };
+		Vector2i get_sector_coord() const { return sector_coord; };
 		bool is_bidirectional() const { return m_bidirectional; };
 	protected:
 		static void _bind_methods();
@@ -57,7 +59,7 @@ namespace FlowAI {
 		int32_t id = 0;
 		int32_t prev_pathnode_id = -1;
 		uint32_t path_layers = 1; // bitmask (ex: Pedestrian, Vehicle, Crosswalk, etc)
-		FlowAISector sector_ref;
+		Vector2i sector_coord = Vector2i(0.0, 0.0);
 		PackedInt32Array links;
 		bool m_bidirectional = true;
 
@@ -79,41 +81,52 @@ namespace FlowAI {
 		FlowAIManager();
 		~FlowAIManager();
 
-		void _ready() override;
-
 		void active_section(std::vector<uint32_t> micro_pathnodes);
 		void disable_section(std::vector<uint32_t> micro_pathnodes);
 
+		void bake_sections();
 		void add_new_pathnode(int32_t prev_pathnode_id = -1);
 
+		void set_bake_data(const Ref<FlowAIBakeData>& p_data) { bake_data = p_data; }
 		void set_section_size(uint16_t _value) { section_size = _value; }
 		void set_section_rows(uint16_t _value) { section_rows = _value; }
 		void set_section_cols(uint16_t _value) { section_cols = _value; }
 
 		static FlowAIManager* get_singleton() { return singleton; }
+
 		AStar3D* get_astar() const { return astar_3d; }
 		uint16_t get_section_size() const { return section_size; }
 		uint16_t get_section_rows() const { return section_rows; }
 		uint16_t get_section_cols() const { return section_cols; }
+		Ref<FlowAIBakeData> get_bake_data() const { return bake_data; }
 		std::vector<FlowAIPathnode*> get_pathnode_list();
 	protected:
 		static void _bind_methods();
+		void _notification(int p_what);
 	private:
 		static FlowAIManager* singleton;
+		Ref<FlowAIBakeData> bake_data;
 		AStar3D* astar_3d = nullptr;
 		uint16_t section_size = 64;
 		uint16_t section_rows = 8;
 		uint16_t section_cols = 8;
+		MeshInstance3D* grid_preview = nullptr;
+		Ref<ImmediateMesh> imm_grid_mesh;
 
 		std::unordered_map<uint32_t, FlowAIPathnode*> _pathnodes_database;
 		HashMap<Vector2i, FlowAISector> _sectors_database;
 
-		void bake_sections();
+		void _draw_sections_grid();
+		void _draw_pathnode_connections();
+
 		Vector2i _get_section_coords(Vector3 _global_pos);
 		bool _is_within_grid_bounds(Vector2i p_coords) const;
 		uint32_t _get_available_pathnode_id();
 	};
 
+	// ----------------------------------------- //
+	// Mr. Bond (our Agent lol)
+	// ----------------------------------------- //
 	class FlowAIAgent3D : public Node {
 		GDCLASS(FlowAIAgent3D, Node)
 	public:

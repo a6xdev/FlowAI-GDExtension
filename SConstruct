@@ -10,6 +10,7 @@ sources = [
     "src/editor/FlowAIEditorInspector.cpp",
     "src/nodes/FlowAIManager.cpp",
     "src/nodes/FlowAIPathnode.cpp",
+    "src/resources/FlowAIBakeData.cpp",
 ]
 
 lib_filename = "{}flow_ai{}{}".format(env.subst('$SHLIBPREFIX'), env["suffix"], env.subst('$SHLIBSUFFIX'))

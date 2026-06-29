@@ -18,12 +18,14 @@ namespace FlowAI {
 		ClassDB::bind_method(D_METHOD("set_prev_node_id"), &FlowAIPathnode::set_prev_node_id);
 		ClassDB::bind_method(D_METHOD("set_links"), &FlowAIPathnode::set_links);
 		ClassDB::bind_method(D_METHOD("set_path_layers", "p_layers"), &FlowAIPathnode::set_path_layers);
+		ClassDB::bind_method(D_METHOD("set_sector_coord", "p_layers"), &FlowAIPathnode::set_sector_coord);
 		ClassDB::bind_method(D_METHOD("set_bidirectional", "p_layers"), &FlowAIPathnode::set_bidirectional);
 
 		ClassDB::bind_method(D_METHOD("get_id"), &FlowAIPathnode::get_id);
 		ClassDB::bind_method(D_METHOD("get_prev_node_id"), &FlowAIPathnode::get_prev_node_id);
 		ClassDB::bind_method(D_METHOD("get_links"), &FlowAIPathnode::get_links);
 		ClassDB::bind_method(D_METHOD("get_path_layers"), &FlowAIPathnode::get_path_layers);
+		ClassDB::bind_method(D_METHOD("get_sector_coord"), &FlowAIPathnode::get_sector_coord);
 		ClassDB::bind_method(D_METHOD("is_bidirectional"), &FlowAIPathnode::is_bidirectional);
 
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::INT, "id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_id", "get_id");
@@ -51,6 +53,7 @@ namespace FlowAI {
 
 	}
 
+	// Create debug meshes
 	void FlowAIPathnode::_notification(int p_what) {
 		switch (p_what) {
 			case NOTIFICATION_ENTER_TREE: {
@@ -94,18 +97,7 @@ namespace FlowAI {
 			case NOTIFICATION_READY: {
 				_update_mesh_preview_colors();
 			} break;
-
-			case NOTIFICATION_PROCESS: {
-				// Get from ProjectSettings if can draw this shit
-				UtilityFunctions::print("AAAAAAAAAAAAA");
-				_redraw_connections();
-			} break;
 		}
-	}
-
-	void FlowAIPathnode::set_path_layers(uint32_t p_layers) {
-		path_layers = p_layers;
-		_update_mesh_preview_colors();
 	}
 
 	// Calls
@@ -132,6 +124,12 @@ namespace FlowAI {
 			set_global_position(hit_point);
 		}
 	}
+
+	void FlowAIPathnode::set_path_layers(uint32_t p_layers) {
+		path_layers = p_layers;
+		_update_mesh_preview_colors();
+	}
+
 
 	void FlowAIPathnode::_update_mesh_preview_colors() {
 		if (mesh_preview == nullptr) return;

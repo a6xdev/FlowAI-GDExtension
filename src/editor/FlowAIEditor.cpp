@@ -1,6 +1,5 @@
 #include "FlowAIEditor.hpp"
 #include <godot_cpp/classes/editor_interface.hpp>
-#include <godot_cpp/classes/project_settings.hpp>
 
 using namespace godot;
 
@@ -27,12 +26,7 @@ namespace FlowAI {
         ProjectSettings* settings = ProjectSettings::get_singleton();
         if (!settings) return;
 
-
-
         // Visualize Connections
-        String d_visualize_connections = "flow_ai/debug/visualize_connections";
-        String d_visualize_sections_grid = "flow_ai/debug/visualize_sections_grid";
-
         if (!settings->has_setting(d_visualize_connections)) { settings->set_setting(d_visualize_connections, true); }
         if (!settings->has_setting(d_visualize_sections_grid)) { settings->set_setting(d_visualize_sections_grid, true); }
 
@@ -44,8 +38,6 @@ namespace FlowAI {
 
         settings->add_property_info(debug_info_visualize_connections);
         settings->add_property_info(debug_info_visualize_sections_grid);
-
-
 
         // Navigation Layers Colors
         Color default_layer_color = Color(0.0f, 0.6f, 1.0f, 0.7f);

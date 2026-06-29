@@ -14,6 +14,7 @@ void initialize_flow_ai_module(ModuleInitializationLevel p_level) {
     if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
         GDREGISTER_CLASS(FlowAIManager);
         GDREGISTER_CLASS(FlowAIPathnode);
+        GDREGISTER_CLASS(FlowAIBakeData);
     }
 
 
