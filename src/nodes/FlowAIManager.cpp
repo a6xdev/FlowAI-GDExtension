@@ -1,24 +1,15 @@
 #include "FlowAI.hpp"
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
-#include <godot_cpp/classes/standard_material3d.hpp>
 #include <godot_cpp/classes/resource_saver.hpp>
-
-using namespace godot;
 
 namespace FlowAI {
 	FlowAIManager* FlowAIManager::singleton = nullptr;
+	HashMap<Vector2i, FlowAISector> m_sectors_database;
+	std::unordered_map<uint32_t, FlowAIPathnode*> m_pathnodes_database;
 
-	FlowAIManager::FlowAIManager() {
-		if (singleton == nullptr) {
-			singleton = this;
-		}
-	};
-	FlowAIManager::~FlowAIManager() {
-		if (singleton == this) {
-			singleton = nullptr;
-		}
-	};
+	FlowAIManager::FlowAIManager() { if (singleton == nullptr) singleton = this; };
+	FlowAIManager::~FlowAIManager() { if (singleton == this) singleton = nullptr; };
 
 	void FlowAIManager::_bind_methods() {
 		ClassDB::bind_method(D_METHOD("bake_sections"), &FlowAIManager::bake_sections);
@@ -43,7 +34,6 @@ namespace FlowAI {
 	void FlowAIManager::_notification(int p_what) {
 		switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
-			// Previews for debug
 			if (grid_preview == nullptr) {
 				grid_preview = memnew(MeshInstance3D);
 				if (imm_grid_mesh.is_null()) { imm_grid_mesh.instantiate(); }
@@ -51,18 +41,17 @@ namespace FlowAI {
 				add_child(grid_preview);
 			}
 
-			if (!bake_data.is_null()) {
+			if (!bake_data.is_null()) { 
 				_draw_sections_grid();
 			}
-
 			break;
-		case NOTIFICATION_READY: // CREATE NODES
-			set_process(true);
+		case NOTIFICATION_READY:
 			if (!Engine::get_singleton()->is_editor_hint()) {
-				astar_3d = memnew(AStar3D);
+				// Start Manager in Runtime
+				_reload_database_from_bake_data();
+				_setup_macro_astar();
 			}
-			break;
-		case NOTIFICATION_PROCESS: // PROCESS NODES
+			set_process(true);
 			break;
 		case NOTIFICATION_EXIT_TREE:
 			grid_preview->queue_free();
@@ -70,36 +59,40 @@ namespace FlowAI {
 		}
 	}
 
-	// CALLS
-	void active_section(std::vector<uint32_t> micro_pathnodes) {}
-	void disable_section(std::vector<uint32_t> micro_pathnodes) {}
+	/////////////////////////////////////////////////////////////////////////////
+	// EDITOR
+	/////////////////////////////////////////////////////////////////////////////
 
-	// ------------------------------------------ //
-	// ------------------------------------------ //
 	void FlowAIManager::bake_sections() {
 		if (bake_data.is_null()) {
 			UtilityFunctions::print("[FlowAI] ERROR::BAKE_DATA::IS_EMPTY");
 			return;
 		}
 
-		std::vector<FlowAIPathnode*> all_pathnodes = get_pathnode_list();
-		_sectors_database.clear();
+		unsigned int section_id_counter = 0;
+		int half_cols = section_cols / 2;
+		int half_rows = section_rows / 2;
+		int nodes_baked = 0;
+		int nodes_out_of_bounds = 0;
+		std::vector<FlowAIPathnode*> _pathnodes = get_pathnode_list();
+		HashMap<Vector2i, FlowAISector> _sectors;
+		Dictionary main_payload;
 
 		// Populates the HashMap by pre-creating empty sections within the specified limit.
-		for (int r = 0; r < section_rows; ++r) {
-			for (int c = 0; c < section_cols; ++c) {
+		for (int r = -half_rows; r < half_rows; ++r) {
+			for (int c = -half_cols; c < half_cols; ++c) {
 				Vector2i coord(c, r);
 				FlowAISector new_sector = FlowAISector();
-				new_sector.center_position = Vector3(coord.x, 0.0, coord.y);
-				_sectors_database[coord] = new_sector;
+				new_sector.id = section_id_counter;
+				new_sector.center_position = Vector3(c * section_size + (section_size / 2.0f), 0.0f, r * section_size + (section_size / 2.0f));
+				_sectors[coord] = new_sector;
+				section_id_counter++;
 			}
 		}
 
-		int nodes_baked = 0;
-		int nodes_out_of_bounds = 0;
-
-		for (int i = 0; i < all_pathnodes.size(); ++i) {
-			FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(all_pathnodes[i]);
+		// Set pathnode sector coord 
+		for (int i = 0; i < _pathnodes.size(); ++i) {
+			FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(_pathnodes[i]);
 			if (!pathnode) continue;
 
 			// Calculate mathematically which square this node is stepping on
@@ -108,7 +101,7 @@ namespace FlowAI {
 
 			// If its within the grid limits, add it to that section list.
 			if (_is_within_grid_bounds(node_sector)) {
-				_sectors_database[node_sector].micro_pathnodes.push_back(pathnode->get_id());
+				_sectors[node_sector].micro_pathnodes.push_back(pathnode->get_id());
 				pathnode->set_sector_coord(node_sector);
 				nodes_baked++;
 			}
@@ -117,32 +110,21 @@ namespace FlowAI {
 			}
 		}
 
-		// Save data in the user created FlowAIBakeData
-		Dictionary main_payload;
-		int half_cols = section_cols / 2;
-		int half_rows = section_rows / 2;
-
 		for (int r = -half_rows; r < half_rows; ++r) {
 			for (int c = -half_cols; c < half_cols; ++c) {
 				Vector2i coord(c, r);
-				if (_sectors_database.has(coord)) {
-					const FlowAISector& sector = _sectors_database[coord];
+				if (_sectors.has(coord)) {
+					const FlowAISector& sector = _sectors[coord];
 
 					Dictionary sector_dict;
+					sector_dict["sector_id"] = sector.id;
 					sector_dict["center_position"] = sector.center_position;
 
 					Array nodes_array;
-					for (int i = 0; i < sector.micro_pathnodes.size(); ++i) {
-						FlowAIPathnode* node = get_pathnode_list()[i];
-						if (node) {
-							Dictionary node_data;
-							node_data["id"] = node->get_id();
-							node_data["position"] = node->get_global_position();
-							node_data["links"] = node->get_links();
-							nodes_array.append(node_data);
-						}
+					for (uint32_t node_id : sector.get_pathnodes()) {
+						nodes_array.append(node_id);
 					}
-					sector_dict["nodes"] = nodes_array;
+					sector_dict["micro_pathnodes"] = nodes_array;
 					main_payload[coord] = sector_dict;
 				}
 			}
@@ -155,8 +137,9 @@ namespace FlowAI {
 		UtilityFunctions::print("[FlowAI] Bake complete! Nodes Baked: ", nodes_baked);
 	}
 
-	// ------------------------------------------ //
-	// ------------------------------------------ //
+	// Add a new pathnode in the SceneTree.
+	// Isn't stored in the pathnode_database because we use the SceneTree itself -
+	// as the definitive source for the list of created pathnodes.
 	void FlowAIManager::add_new_pathnode(int32_t prev_pathnode_id) {
 		FlowAIPathnode* new_pathnode = memnew(FlowAIPathnode);
 		Node* scene_root = get_tree() ? get_tree()->get_edited_scene_root() : nullptr;
@@ -174,8 +157,8 @@ namespace FlowAI {
 
 		// If prev_pathnode_id is != -1, mean that the user is creating a new pathnode based on a selected pathnode.
 		if (prev_pathnode_id != -1) {
-			auto it = _pathnodes_database.find(prev_pathnode_id);
-			if (it != _pathnodes_database.end()) {
+			auto it = m_pathnodes_database.find(prev_pathnode_id);
+			if (it != m_pathnodes_database.end()) {
 				FlowAIPathnode* prev_pathnode = Object::cast_to<FlowAIPathnode>(it->second);
 				if (prev_pathnode) {
 					PackedInt32Array prev_node_links_arr = prev_pathnode->get_links();
@@ -193,116 +176,127 @@ namespace FlowAI {
 				editor->edit_node(new_pathnode);
 			}
 		}
-		
-		UtilityFunctions::print("Added new pathnode.");
+
+		UtilityFunctions::print("[FlowAI] Added new pathnode.");
 		return;
 	}
 
-	// ------------------------------------------ //
-	// ------------------------------------------ //
-	std::vector<FlowAIPathnode*> FlowAIManager::get_pathnode_list() {
-		TypedArray<Node> my_children = get_children();
-		std::vector<FlowAIPathnode*> arr_pathnode_list;
-		_pathnodes_database.clear(); // Clear to get the updated list
-
-		for (int i = 0; i < my_children.size(); i++) {
-			FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(my_children[i]);
-			if (pathnode) {
-				_pathnodes_database[pathnode->get_id()] = pathnode;
-				arr_pathnode_list.push_back(pathnode);
-			}
-		}
-
-		return arr_pathnode_list;
-	}
-
 	/////////////////////////////////////////////////////////////////////////////
-	// PRIVATE
+	// RUNTIME
 	/////////////////////////////////////////////////////////////////////////////
+	
+	// Setup micro (sections) and macro (pathnode) AStar3D.
+	void FlowAIManager::_setup_macro_astar() {
+		// this function is used after _reload_data_from_bake_data() function because 
+		// of the sections and pathnodes database.
 
-	void FlowAIManager::_draw_sections_grid() {
-		if (imm_grid_mesh.is_null()) return;
+		astar_macro = memnew(AStar3D);
 
-		imm_grid_mesh->clear_surfaces();
-
-		int half_cols = section_cols / 2;
-		int half_rows = section_rows / 2;
-		float min_x = -half_cols * section_size;
-		float max_x = half_cols * section_size;
-		float min_z = -half_rows * section_size;
-		float max_z = half_rows * section_size;
-
-		Color line_color = Color(1.0f, 0.5f, 0.0f, 0.2f);
-		Color border_color = Color(1.0f, 0.2f, 0.0f, 0.6f);
-		Color active_sector_color = Color(0.0f, 1.0f, 0.5f, 0.4f);
-
-		imm_grid_mesh->surface_begin(Mesh::PRIMITIVE_LINES);
-
-		// Draw cols
-		for (int c = -half_cols; c <= half_cols; ++c) {
-			float x = c * section_size;
-			Color current_color = (c == -half_cols || c == half_cols) ? border_color : line_color;
-			imm_grid_mesh->surface_set_color(current_color);
-			imm_grid_mesh->surface_add_vertex(Vector3(x, 0.05f, min_z));
-			imm_grid_mesh->surface_set_color(current_color);
-			imm_grid_mesh->surface_add_vertex(Vector3(x, 0.05f, max_z));
+		for (const auto &E : m_sectors_database) {
+			Vector2i coord = E.key;
+			FlowAISector sector_ref = E.value;
+			astar_macro->add_point(sector_ref.get_id(), sector_ref.get_center_position());
 		}
 
-		// Draw rows
-		for (int r = -half_rows; r <= half_rows; ++r) {
-			float z = r * section_size;
-			Color current_color = (r == -half_rows || r == half_rows) ? border_color : line_color;
-			imm_grid_mesh->surface_set_color(current_color);
-			imm_grid_mesh->surface_add_vertex(Vector3(min_x, 0.05f, z));
-			imm_grid_mesh->surface_set_color(current_color);
-			imm_grid_mesh->surface_add_vertex(Vector3(max_x, 0.05f, z));
-		}
+		// Connect neighbor sections
+		Vector2i directions[] = {
+			Vector2i(1, 0),   // East
+			Vector2i(-1, 0),  // West
+			Vector2i(0, 1),   // South
+			Vector2i(0, -1),  // North
+			Vector2i(1, 1),   // Southeast (Diagonal)
+			Vector2i(-1, 1),  // Southwest (Diagonal)
+			Vector2i(1, -1),  // Northeast (Diagonal)
+			Vector2i(-1, -1)  // Northwest (Diagonal)
+		};
+		
+		for (const auto& E : m_sectors_database) {
+			Vector2i coord = E.key;
+			FlowAISector start_sector = E.value;
 
-		// Draw "X" in sections that have pathnodes
-		if (bake_data.is_valid()) {
-			Dictionary payload = bake_data->get_sectors_payload();
-
-			for (int r = -half_rows; r < half_rows; ++r) {
-				for (int c = -half_cols; c < half_cols; ++c) {
-					Vector2i coord(c, r);
-					if (payload.has(coord)) {
-						Dictionary sector_dict = payload[coord];
-						Array nodes_in_sector = sector_dict["nodes"];
-						if (!nodes_in_sector.is_empty()) {
-							float x_min = c * section_size;
-							float x_max = x_min + section_size;
-							float z_min = r * section_size;
-							float z_max = z_min + section_size;
-
-							imm_grid_mesh->surface_set_color(active_sector_color);
-
-							imm_grid_mesh->surface_add_vertex(Vector3(x_min, 0.06f, z_min));
-							imm_grid_mesh->surface_add_vertex(Vector3(x_max, 0.06f, z_max));
-
-							imm_grid_mesh->surface_add_vertex(Vector3(x_max, 0.06f, z_min));
-							imm_grid_mesh->surface_add_vertex(Vector3(x_min, 0.06f, z_max));
-						}
-					}
+			// 8 because we have 8 directions.
+			for (int i = 0; i < 8; i++) {
+				Vector2i neighbor_coord = coord + directions[i];
+				if (m_sectors_database.has(neighbor_coord)) {
+					FlowAISector neighbor_ref = get_sector_by_coord(neighbor_coord);
+					// Bi-direcional is always true.
+					astar_macro->connect_points(start_sector.get_id(), neighbor_ref.get_id(), true);
 				}
 			}
 		}
 
-		imm_grid_mesh->surface_end();
+		UtilityFunctions::print("[FlowAI] Macro Graph generated and neighbors connected.");
 	}
 
-	// ------------------------------------------ //
-	// ------------------------------------------ //
-	void FlowAIManager::_draw_pathnode_connections() {}
+	// set section_database and pathnode_database based on FlowAIBakeData
+	// Used only in runtime functions.
+	void FlowAIManager::_reload_database_from_bake_data() {
+		if (bake_data.is_null()) return;
 
-	// ------------------------------------------ //
-	// ------------------------------------------ //
-	Vector2i FlowAIManager::_get_section_coords(Vector3 _global_pos) {
-		// The manager is in the (0.0, 0.0, 0.0) origin.
+		m_sectors_database.clear();
+		m_pathnodes_database.clear();
+
+		Dictionary main_payload = bake_data->get_sectors_payload();
+		Array sector_coords = main_payload.keys();
+
+		for (int i = 0; i < sector_coords.size(); i++) {
+			Vector2i coord = sector_coords[i];
+			Dictionary data = main_payload[coord];
+
+			FlowAISector runtime_sector;
+			runtime_sector.id = data["sector_id"];
+			UtilityFunctions::print("runtime_sector_id: ", runtime_sector.id);
+			runtime_sector.center_position = data["center_position"];
+			runtime_sector.is_active = false; // Define false as native
+			Array pathnodes_arr = data["micro_pathnodes"];
+			for (int j = 0; j < pathnodes_arr.size(); j++) {
+				runtime_sector.micro_pathnodes.push_back(j);
+			}
+			m_sectors_database[coord] = runtime_sector;
+		}
+	}
+
+	///////////////////////////////////////////////////////////////////////////
+	// CALLS
+	/////////////////////////////////////////////////////////////////////////////
+
+	std::vector<FlowAIPathnode*> FlowAIManager::get_pathnode_list() {
+		TypedArray<Node> my_children = get_children();
+		std::vector<FlowAIPathnode*> arr_pathnode_list;
+		m_pathnodes_database.clear();
+
+		for (int i = 0; i < my_children.size(); i++) {
+			FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(my_children[i]);
+			if (pathnode) {
+				m_pathnodes_database[pathnode->get_id()] = pathnode;
+				arr_pathnode_list.push_back(pathnode);
+			}
+		}
+		return arr_pathnode_list;
+	}
+
+	// this function can only be used on runtime.
+	FlowAISector FlowAIManager::get_sector_by_coord(Vector2i _coord) const {
+		if (m_sectors_database.has(_coord)) return m_sectors_database.get(_coord);
+		return FlowAISector();
+	}
+
+	// this function can only be used on runtime.
+	FlowAISector FlowAIManager::get_sector_by_pos(Vector3 _pos) const {
+		Vector2i coord = _get_section_coords(_pos);
+		if (m_sectors_database.has(coord)) return m_sectors_database.get(coord);
+		return FlowAISector();
+	}
+
+	// Discover which section the pathnode position is in
+	// The origin is always (0.0, 0.0, 0.0).
+	Vector2i FlowAIManager::_get_section_coords(Vector3 _global_pos) const {
 		int col = Math::floor(_global_pos.x / (float)section_size);
 		int row = Math::floor(_global_pos.z / (float)section_size);
 		return Vector2i(col, row);
 	}
 
+	// Check if pathnode position is in within grid bounds
 	bool FlowAIManager::_is_within_grid_bounds(Vector2i p_coords) const {
 		int half_cols = section_cols / 2;
 		int half_rows = section_cols / 2;
@@ -310,11 +304,13 @@ namespace FlowAI {
 			(p_coords.y >= -half_rows && p_coords.y < half_rows);
 	}
 
+	// Get a available ID.
 	uint32_t FlowAIManager::_get_available_pathnode_id() {
 		std::vector<FlowAIPathnode*> arr_pathnodes_list = get_pathnode_list();
 		uint32_t counter_id = 0;
+
 		while (true) {
-			if (_pathnodes_database.find(counter_id) != _pathnodes_database.end()) {
+			if (m_pathnodes_database.find(counter_id) != m_pathnodes_database.end()) {
 				counter_id++;
 				continue;
 			}

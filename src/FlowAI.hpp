@@ -13,6 +13,7 @@
 #include <godot_cpp/classes/mesh_instance3d.hpp>
 #include <godot_cpp/classes/immediate_mesh.hpp>
 #include <godot_cpp/classes/a_star3d.hpp>
+#include <godot_cpp/classes/character_body3d.hpp>
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -23,10 +24,17 @@ using namespace godot;
 
 namespace FlowAI {
 	struct FlowAISector {
-		godot::Vector3 center_position;
-		std::vector<uint32_t> micro_pathnodes;
-		std::vector<uint32_t> neighbor_sectors;   // macro sectors neighbors
-		bool is_active;                           // if its far from camera, become false
+		FlowAISector() = default;
+		~FlowAISector() = default;
+
+		unsigned int			id = 0;
+		godot::Vector3			center_position;
+		std::vector<uint32_t>	micro_pathnodes;
+		bool					is_active;	// if its far from camera, become false
+
+		unsigned int			get_id() const { return id; };
+		Vector3					get_center_position() const { return center_position; };
+		std::vector<uint32_t>	get_pathnodes() const { return micro_pathnodes; };
 	};
 
 	// Why a Marker3D and not a Node3D? because is more easy select an marker3D in Godot Editor.
@@ -81,9 +89,6 @@ namespace FlowAI {
 		FlowAIManager();
 		~FlowAIManager();
 
-		void active_section(std::vector<uint32_t> micro_pathnodes);
-		void disable_section(std::vector<uint32_t> micro_pathnodes);
-
 		void bake_sections();
 		void add_new_pathnode(int32_t prev_pathnode_id = -1);
 
@@ -94,32 +99,34 @@ namespace FlowAI {
 
 		static FlowAIManager* get_singleton() { return singleton; }
 
-		AStar3D* get_astar() const { return astar_3d; }
+		AStar3D* get_macro_astar() const { return astar_macro; }
 		uint16_t get_section_size() const { return section_size; }
 		uint16_t get_section_rows() const { return section_rows; }
 		uint16_t get_section_cols() const { return section_cols; }
 		Ref<FlowAIBakeData> get_bake_data() const { return bake_data; }
 		std::vector<FlowAIPathnode*> get_pathnode_list();
+		FlowAISector get_sector_by_coord(Vector2i _coord) const;
+		FlowAISector get_sector_by_pos(Vector3 _pos) const;
 	protected:
 		static void _bind_methods();
 		void _notification(int p_what);
 	private:
 		static FlowAIManager* singleton;
 		Ref<FlowAIBakeData> bake_data;
-		AStar3D* astar_3d = nullptr;
+		AStar3D* astar_macro = nullptr;
 		uint16_t section_size = 64;
 		uint16_t section_rows = 8;
 		uint16_t section_cols = 8;
 		MeshInstance3D* grid_preview = nullptr;
 		Ref<ImmediateMesh> imm_grid_mesh;
 
-		std::unordered_map<uint32_t, FlowAIPathnode*> _pathnodes_database;
-		HashMap<Vector2i, FlowAISector> _sectors_database;
-
+		// ALERT: Maybe I should put these draw functions in a debug .cpp file.
 		void _draw_sections_grid();
 		void _draw_pathnode_connections();
 
-		Vector2i _get_section_coords(Vector3 _global_pos);
+		void _setup_macro_astar(); // Setup micro (sections) and macro (pathnode) AStar3D.
+		void _reload_database_from_bake_data();
+		Vector2i _get_section_coords(Vector3 _global_pos) const;
 		bool _is_within_grid_bounds(Vector2i p_coords) const;
 		uint32_t _get_available_pathnode_id();
 	};
@@ -138,10 +145,14 @@ namespace FlowAI {
 		Vector3 get_next_pathnode_position();
 	protected:
 		static void _bind_methods();
-		void _notification(int p_what);
 	private:
-		PackedVector3Array find_path(FlowAIPathnode* start, FlowAIPathnode* target);
-		Array get_current_sections_path();
-		Array get_current_pathnodes_path();
+		CharacterBody3D* actor_owner = nullptr;
+		PackedVector3Array current_sectors_path;
+		PackedVector3Array current_pathnodes_path;
+
+		void request_path(Vector3 _pos_target) const;
+
+		PackedVector3Array get_current_sections_path();
+		PackedVector3Array get_current_pathnodes_path();
 	};
 }
