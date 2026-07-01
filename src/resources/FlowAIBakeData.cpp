@@ -1,4 +1,4 @@
-#include "FlowAIBakeData.hpp"
+#include "../FlowAI.hpp"
 
 namespace FlowAI {
 	FlowAIBakeData::FlowAIBakeData() {}

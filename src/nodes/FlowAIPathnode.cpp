@@ -1,4 +1,7 @@
-#include "FlowAI.hpp"
+#include "../classes/FlowAIManager.hpp"
+#include "../classes/FlowAIPathnode.hpp"
+#include "../FlowAIDebug.hpp"
+
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/physics_ray_query_parameters3d.hpp>
 #include <godot_cpp/classes/world3d.hpp>
@@ -64,42 +67,38 @@ namespace FlowAI {
 					set_process_mode(PROCESS_MODE_ALWAYS);
 				}
 
-				if (mesh_preview == nullptr) {
-					mesh_preview = memnew(MeshInstance3D);
+				if (FlowAIDebug::pathnode_debug) {
+					if (pathnode_mesh_preview == nullptr) {
+						pathnode_mesh_preview = memnew(MeshInstance3D);
 
-					Ref<BoxMesh> box_mesh;
-					box_mesh.instantiate();
-					box_mesh->set_size(Vector3(0.2f, 0.2f, 0.2f));
+						Ref<BoxMesh> box_mesh;
+						box_mesh.instantiate();
+						box_mesh->set_size(Vector3(0.2f, 0.2f, 0.2f));
 
-					Ref<StandardMaterial3D> material;
-					material.instantiate();
-					material->set_albedo(Color(0.0f, 0.6f, 1.0f, 0.7f)); // blue neon with 70% of opacity
-					material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
-					material->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
+						Ref<StandardMaterial3D> material;
+						material.instantiate();
+						material->set_albedo(Color(0.0f, 0.6f, 1.0f, 0.7f)); // blue neon with 70% of opacity
+						material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
+						material->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
 
-					box_mesh->set_material(material);
-					mesh_preview->set_mesh(box_mesh);
+						box_mesh->set_material(material);
+						pathnode_mesh_preview->set_mesh(box_mesh);
 
-					add_child(mesh_preview);
+						add_child(pathnode_mesh_preview);
+					}
+
+					if (pathnode_name_preview == NULL) {
+						pathnode_name_preview = memnew(Label3D);
+						pathnode_name_preview->set_text(get_name());
+						pathnode_name_preview->set_billboard_mode(BaseMaterial3D::BILLBOARD_FIXED_Y);
+						add_child(pathnode_name_preview);
+						Vector3 my_pos = get_global_position();
+						my_pos.y += 1.0;
+						pathnode_name_preview->set_global_position(my_pos);
+					}
 				}
-
-				if (line_preview == nullptr) {
-					line_preview = memnew(MeshInstance3D);
-					imm_mesh.instantiate();
-					line_preview->set_mesh(imm_mesh);
-
-					Ref<StandardMaterial3D> line_material;
-					line_material.instantiate();
-					line_material->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
-					line_preview->set_material_override(line_material);
-
-					add_child(line_preview);
-				}
-			} break;
-
-			case NOTIFICATION_READY: {
-				_update_mesh_preview_colors();
-			} break;
+				break;
+			}
 		}
 	}
 
@@ -133,11 +132,10 @@ namespace FlowAI {
 		_update_mesh_preview_colors();
 	}
 
-
 	void FlowAIPathnode::_update_mesh_preview_colors() {
-		if (mesh_preview == nullptr) return;
+		if (pathnode_mesh_preview == nullptr) return;
 
-		Ref<Mesh> mesh = mesh_preview->get_mesh();
+		Ref<Mesh> mesh = pathnode_mesh_preview->get_mesh();
 		if (mesh.is_null()) return;
 
 		Ref<StandardMaterial3D> mat = mesh->surface_get_material(0);
@@ -161,45 +159,5 @@ namespace FlowAI {
 			Color layer_color = settings->get_setting(color_path);
 			mat->set_albedo(layer_color);
 		}
-	}
-
-	void FlowAIPathnode::_redraw_connections() {
-		if (imm_mesh.is_null() || mesh_preview == nullptr) return;
-
-		imm_mesh->clear_surfaces();
-
-		if (links.is_empty()) return;
-
-		Ref<Mesh> mesh = mesh_preview->get_mesh(); if (mesh.is_null()) return;
-		Ref<StandardMaterial3D> mat = mesh->surface_get_material(0); if (mat.is_null()) return;
-		Color line_color = mat->get_albedo();
-		line_color.a = 1.0f;
-
-		Vector3 local_start(0, 0, 0);
-		imm_mesh->surface_begin(Mesh::PRIMITIVE_LINES);
-
-		for (int i = 0; i < links.size(); ++i) {
-			int32_t target_id = links[i];
-			Node* parent = get_parent();
-			if (!parent) continue;
-
-			FlowAIPathnode* target_node = nullptr;
-			for (int j = 0; j < parent->get_child_count(); ++j) {
-				if (FlowAIPathnode* sibling = Object::cast_to<FlowAIPathnode>(parent->get_child(j))) {
-				}
-			}
-
-			if (target_node) {
-				Vector3 local_end = to_local(target_node->get_global_position());
-
-				imm_mesh->surface_set_color(line_color);
-				imm_mesh->surface_add_vertex(local_start);
-
-				imm_mesh->surface_set_color(line_color);
-				imm_mesh->surface_add_vertex(local_end);
-			}
-		}
-
-		imm_mesh->surface_end();
 	}
 }

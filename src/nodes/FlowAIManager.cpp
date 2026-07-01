@@ -1,4 +1,7 @@
-#include "FlowAI.hpp"
+#include "../classes/FlowAIManager.hpp"
+#include "../classes/FlowAIPathnode.hpp"
+#include "../FlowAIDebug.hpp"
+
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/resource_saver.hpp>
@@ -38,25 +41,21 @@ namespace FlowAI {
 		switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
 			set_process(true);
-
-			// Grid Preview
-			if (grid_preview == nullptr) {
+			
+			// Section Grid Preview
+			if (grid_preview == NULL && FlowAIDebug::draw_sections_grid == true) {
 				grid_preview = memnew(MeshInstance3D);
-				if (imm_grid_mesh.is_null()) { imm_grid_mesh.instantiate(); }
+				imm_grid_mesh.instantiate();
 				grid_preview->set_mesh(imm_grid_mesh);
 				add_child(grid_preview);
 			}
 
 			// Pathnode Connections Preview
-			if (pathnode_connections_preview == nullptr) {
+			if (pathnode_connections_preview == NULL && FlowAIDebug::draw_pathnode_connections_grid == true) {
 				pathnode_connections_preview = memnew(MeshInstance3D);
-				if (imm_pathnode_connections_mesh.is_null()) { imm_pathnode_connections_mesh.instantiate(); }
+				imm_pathnode_connections_mesh.instantiate();
 				pathnode_connections_preview->set_mesh(imm_pathnode_connections_mesh);
 				add_child(pathnode_connections_preview);
-			}
-
-			if (!bake_data.is_null()) { 
-				_draw_sections_grid();
 			}
 
 			if (!Engine::get_singleton()->is_editor_hint()) {
@@ -64,12 +63,20 @@ namespace FlowAI {
 				_reload_database_from_bake_data();
 				_setup_macro_astar();
 			}
+			else {
+				get_pathnode_list(); // update "m_pathnodes_database"
+			}
+
+			if (!bake_data.is_null()) { 
+				_draw_sections_grid(bake_data);
+			}
 			break;
 		case NOTIFICATION_PROCESS:
-			_draw_pathnode_connections();
+			if (m_pathnodes_database.size() > 1) {
+				_draw_pathnode_connections(m_pathnodes_database);
+			}
 			break;
 		case NOTIFICATION_EXIT_TREE:
-			grid_preview->queue_free();
 			break;
 		}
 	}
@@ -149,7 +156,7 @@ namespace FlowAI {
 
 		bake_data->set_sectors_payload(main_payload);
 		ResourceSaver::get_singleton()->save(bake_data);
-		_draw_sections_grid();
+		_draw_sections_grid(bake_data);
 
 		UtilityFunctions::print("[FlowAI] Bake complete! Nodes Baked: ", nodes_baked);
 	}
@@ -198,47 +205,6 @@ namespace FlowAI {
 		return;
 	}
 
-	void FlowAIManager::_draw_pathnode_connections() {
-		std::vector<FlowAIPathnode*> all_pathnodes = get_pathnode_list();
-		if (all_pathnodes.empty()) return;
-
-		imm_pathnode_connections_mesh->clear_surfaces();
-
-		imm_pathnode_connections_mesh->surface_begin(Mesh::PRIMITIVE_LINES);
-
-		for (int i = 0; i < all_pathnodes.size(); ++i) {
-			FlowAIPathnode* current_node = all_pathnodes[i];
-			if (!current_node) continue;
-
-			Vector3 start_pos = current_node->get_global_position();
-			start_pos.y += 0.1f;
-
-			PackedInt32Array linked_ids = current_node->get_links();
-
-			for (int j = 0; j < linked_ids.size(); ++j) {
-				uint32_t target_id = linked_ids[j];
-
-				FlowAIPathnode* target_node = nullptr;
-				auto it = m_pathnodes_database.find(target_id);
-				if (it != m_pathnodes_database.end()) {
-					target_node = it->second;
-				}
-
-				Vector3 end_pos = target_node->get_global_position();
-				end_pos.y += 0.1f;
-
-				if (target_node) {
-					imm_pathnode_connections_mesh->surface_set_color(line_color);
-					imm_pathnode_connections_mesh->surface_add_vertex(start_pos);
-					imm_pathnode_connections_mesh->surface_set_color(line_color);
-					imm_pathnode_connections_mesh->surface_add_vertex(end_pos);
-				}
-
-			}
-		}
-		imm_pathnode_connections_mesh->surface_end();
-	}
-
 	/////////////////////////////////////////////////////////////////////////////
 	// RUNTIME
 	/////////////////////////////////////////////////////////////////////////////
@@ -275,7 +241,7 @@ namespace FlowAI {
 						unsigned int target_sector_id = target_node->get_sector_id();
 						if (current_sector_id != target_sector_id) {
 							astar_macro->connect_points(current_sector_id, target_sector_id, true);
-							UtilityFunctions::print("[FlowAI] AStar Macro Points: ", current_sector_id, ", and ", target_sector_id, " has Connected");
+							//UtilityFunctions::print("[FlowAI] AStar Macro Points: ", current_sector_id, ", and ", target_sector_id, " has Connected");
 						}
 					}
 				}
@@ -315,12 +281,14 @@ namespace FlowAI {
 			m_sectors_database[coord] = runtime_sector;
 
 			// Debug
-			Label3D* new_label = memnew(Label3D);
-			new_label->set_text(String::num_int64(runtime_sector.get_id()));
-			new_label->set_billboard_mode(BaseMaterial3D::BillboardMode::BILLBOARD_FIXED_Y);
-			new_label->set_pixel_size(0.036);
-			add_child(new_label);
-			new_label->set_global_position(Vector3(runtime_sector.center_position.x, runtime_sector.center_position.y + 3, runtime_sector.center_position.z));
+			if (FlowAIDebug::section_debug) {
+				Label3D* new_label = memnew(Label3D);
+				new_label->set_text(String::num_int64(runtime_sector.get_id()));
+				new_label->set_billboard_mode(BaseMaterial3D::BillboardMode::BILLBOARD_FIXED_Y);
+				new_label->set_pixel_size(0.036);
+				add_child(new_label);
+				new_label->set_global_position(Vector3(runtime_sector.center_position.x, runtime_sector.center_position.y + 3, runtime_sector.center_position.z));
+			}
 		}
 	}
 
@@ -356,16 +324,22 @@ namespace FlowAI {
 	}
 
 	// this function can only be used on runtime.
-	FlowAISector FlowAIManager::get_sector_by_coord(Vector2i _coord) const {
-		if (m_sectors_database.has(_coord)) return m_sectors_database.get(_coord);
-		return FlowAISector();
+	FlowAISector* FlowAIManager::get_sector_by_coord(Vector2i _coord) const {
+		auto it = m_sectors_database.find(_coord);
+		if (it != m_sectors_database.end()) {
+			return &(it->value);
+		}
+		return nullptr;
 	}
 
 	// this function can only be used on runtime.
-	FlowAISector FlowAIManager::get_sector_by_pos(Vector3 _pos) const {
+	FlowAISector* FlowAIManager::get_sector_by_pos(Vector3 _pos) const {
 		Vector2i coord = _get_section_coords(_pos);
-		if (m_sectors_database.has(coord)) return m_sectors_database.get(coord);
-		return FlowAISector();
+		auto it = m_sectors_database.find(coord);
+		if (it != m_sectors_database.end()) {
+			return &(it->value);
+		}
+		return nullptr;
 	}
 
 	// Discover which section the pathnode position is in

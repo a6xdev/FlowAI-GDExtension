@@ -1,6 +1,10 @@
 #include "register_types.h"
 
 #include "FlowAI.hpp"
+#include "classes/FlowAIManager.hpp"
+#include "classes/FlowAIAgent3D.hpp"
+#include "classes/FlowAIPathnode.hpp"
+
 #include "editor/FlowAIEditor.hpp"
 
 #include <gdextension_interface.h>
@@ -12,10 +16,10 @@ using namespace FlowAI;
 
 void initialize_flow_ai_module(ModuleInitializationLevel p_level) {
     if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
-        GDREGISTER_CLASS(FlowAIManager);
-        GDREGISTER_CLASS(FlowAIPathnode);
-        GDREGISTER_CLASS(FlowAIAgent3D);
-        GDREGISTER_CLASS(FlowAIBakeData);
+        GDREGISTER_CLASS(FlowAI::FlowAIManager);
+        GDREGISTER_CLASS(FlowAI::FlowAIPathnode);
+        GDREGISTER_CLASS(FlowAI::FlowAIAgent3D);
+        GDREGISTER_CLASS(FlowAI::FlowAIBakeData);
     }
 
 

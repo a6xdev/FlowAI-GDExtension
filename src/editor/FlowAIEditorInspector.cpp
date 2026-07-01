@@ -1,4 +1,6 @@
 #include "FlowAIEditor.hpp"
+#include "../classes/FlowAIManager.hpp"
+#include "../classes/FlowAIPathnode.hpp"
 #include <godot_cpp/classes/v_box_container.hpp>
 
 using namespace godot;
