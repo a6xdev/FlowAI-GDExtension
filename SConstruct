@@ -13,6 +13,8 @@ sources = [
     "src/nodes/FlowAIAgent3D.cpp",
     "src/resources/FlowAIBakeData.cpp",
     "src/systems/draw_sections_grid.cpp",
+    "src/systems/draw_path.cpp",
+    "src/systems/draw_pathnode_connections.cpp",
 ]
 
 lib_filename = "{}flow_ai{}{}".format(env.subst('$SHLIBPREFIX'), env["suffix"], env.subst('$SHLIBSUFFIX'))

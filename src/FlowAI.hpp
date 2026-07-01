@@ -15,6 +15,7 @@
 #include <godot_cpp/classes/a_star3d.hpp>
 #include <godot_cpp/classes/character_body3d.hpp>
 #include <vector>
+#include <map>
 #include <unordered_map>
 #include <string>
 
@@ -35,6 +36,10 @@ namespace FlowAI {
 		unsigned int			get_id() const { return id; };
 		Vector3					get_center_position() const { return center_position; };
 		std::vector<uint32_t>	get_pathnodes() const { return micro_pathnodes; };
+
+		bool operator<(const FlowAISector& other) const {
+			return id < other.get_id();
+		}
 	};
 
 	// Why a Marker3D and not a Node3D? because is more easy select an marker3D in Godot Editor.
@@ -104,6 +109,7 @@ namespace FlowAI {
 		uint16_t get_section_rows() const { return section_rows; }
 		uint16_t get_section_cols() const { return section_cols; }
 		Ref<FlowAIBakeData> get_bake_data() const { return bake_data; }
+		std::unordered_map<unsigned int, FlowAISector> get_sectors_list();
 		std::vector<FlowAIPathnode*> get_pathnode_list();
 		FlowAISector get_sector_by_coord(Vector2i _coord) const;
 		FlowAISector get_sector_by_pos(Vector3 _pos) const;
@@ -114,11 +120,15 @@ namespace FlowAI {
 		static FlowAIManager* singleton;
 		Ref<FlowAIBakeData> bake_data;
 		AStar3D* astar_macro = nullptr;
-		uint16_t section_size = 64;
-		uint16_t section_rows = 8;
-		uint16_t section_cols = 8;
+		int section_size = 64;
+		int section_rows = 8;
+		int section_cols = 8;
+
+		// Debug Preview
 		MeshInstance3D* grid_preview = nullptr;
+		MeshInstance3D* pathnode_connections_preview = nullptr;
 		Ref<ImmediateMesh> imm_grid_mesh;
+		Ref<ImmediateMesh> imm_pathnode_connections_mesh;
 
 		// ALERT: Maybe I should put these draw functions in a debug .cpp file.
 		void _draw_sections_grid();
@@ -137,20 +147,36 @@ namespace FlowAI {
 	class FlowAIAgent3D : public Node {
 		GDCLASS(FlowAIAgent3D, Node)
 	public:
+		float path_desired_distance = 1.0f;
+
 		FlowAIAgent3D();
 		~FlowAIAgent3D();
 
+		bool is_path_complete() const { return path_complete; }
+
 		void set_target_pathnode(FlowAIPathnode* pathnode);
-		void get_random_path();
+		void set_random_path();
 		Vector3 get_next_pathnode_position();
 	protected:
 		static void _bind_methods();
+		void _notification(int p_what);
 	private:
 		CharacterBody3D* actor_owner = nullptr;
-		PackedVector3Array current_sectors_path;
-		PackedVector3Array current_pathnodes_path;
 
-		void request_path(Vector3 _pos_target) const;
+		MeshInstance3D* path_renderer = nullptr;
+		Ref<ImmediateMesh> immediate_mesh;
+
+		HashMap<unsigned int, PackedVector3Array> current_sectors_database;
+		PackedVector3Array current_true_sectors_path;
+		PackedVector3Array current_pathnodes_path;
+		int current_path_index = 0;
+		bool path_complete = false;
+
+		void request_path(Vector3 _pos_target);
+		void draw_path(PackedVector3Array p_path);
+
+		void set_next_path_index();
+		FlowAIPathnode* get_pathnode_closest_to_pos(Vector3 _pos);
 
 		PackedVector3Array get_current_sections_path();
 		PackedVector3Array get_current_pathnodes_path();

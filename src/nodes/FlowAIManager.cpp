@@ -2,6 +2,9 @@
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/resource_saver.hpp>
+#include <godot_cpp/classes/label3d.hpp>
+
+Color line_color = Color(1.0f, 0.0f, 0.0f, 0.5f);
 
 namespace FlowAI {
 	FlowAIManager* FlowAIManager::singleton = nullptr;
@@ -34,6 +37,9 @@ namespace FlowAI {
 	void FlowAIManager::_notification(int p_what) {
 		switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
+			set_process(true);
+
+			// Grid Preview
 			if (grid_preview == nullptr) {
 				grid_preview = memnew(MeshInstance3D);
 				if (imm_grid_mesh.is_null()) { imm_grid_mesh.instantiate(); }
@@ -41,23 +47,33 @@ namespace FlowAI {
 				add_child(grid_preview);
 			}
 
+			// Pathnode Connections Preview
+			if (pathnode_connections_preview == nullptr) {
+				pathnode_connections_preview = memnew(MeshInstance3D);
+				if (imm_pathnode_connections_mesh.is_null()) { imm_pathnode_connections_mesh.instantiate(); }
+				pathnode_connections_preview->set_mesh(imm_pathnode_connections_mesh);
+				add_child(pathnode_connections_preview);
+			}
+
 			if (!bake_data.is_null()) { 
 				_draw_sections_grid();
 			}
-			break;
-		case NOTIFICATION_READY:
+
 			if (!Engine::get_singleton()->is_editor_hint()) {
 				// Start Manager in Runtime
 				_reload_database_from_bake_data();
 				_setup_macro_astar();
 			}
-			set_process(true);
+			break;
+		case NOTIFICATION_PROCESS:
+			_draw_pathnode_connections();
 			break;
 		case NOTIFICATION_EXIT_TREE:
 			grid_preview->queue_free();
 			break;
 		}
 	}
+
 
 	/////////////////////////////////////////////////////////////////////////////
 	// EDITOR
@@ -181,6 +197,47 @@ namespace FlowAI {
 		return;
 	}
 
+	void FlowAIManager::_draw_pathnode_connections() {
+		std::vector<FlowAIPathnode*> all_pathnodes = get_pathnode_list();
+		if (all_pathnodes.empty()) return;
+
+		imm_pathnode_connections_mesh->clear_surfaces();
+
+		imm_pathnode_connections_mesh->surface_begin(Mesh::PRIMITIVE_LINES);
+
+		for (int i = 0; i < all_pathnodes.size(); ++i) {
+			FlowAIPathnode* current_node = all_pathnodes[i];
+			if (!current_node) continue;
+
+			Vector3 start_pos = current_node->get_global_position();
+			start_pos.y += 0.1f;
+
+			PackedInt32Array linked_ids = current_node->get_links();
+
+			for (int j = 0; j < linked_ids.size(); ++j) {
+				uint32_t target_id = linked_ids[j];
+
+				FlowAIPathnode* target_node = nullptr;
+				auto it = m_pathnodes_database.find(target_id);
+				if (it != m_pathnodes_database.end()) {
+					target_node = it->second;
+				}
+
+				Vector3 end_pos = target_node->get_global_position();
+				end_pos.y += 0.1f;
+
+				if (target_node) {
+					imm_pathnode_connections_mesh->surface_set_color(line_color);
+					imm_pathnode_connections_mesh->surface_add_vertex(start_pos);
+					imm_pathnode_connections_mesh->surface_set_color(line_color);
+					imm_pathnode_connections_mesh->surface_add_vertex(end_pos);
+				}
+
+			}
+		}
+		imm_pathnode_connections_mesh->surface_end();
+	}
+
 	/////////////////////////////////////////////////////////////////////////////
 	// RUNTIME
 	/////////////////////////////////////////////////////////////////////////////
@@ -245,14 +302,22 @@ namespace FlowAI {
 
 			FlowAISector runtime_sector;
 			runtime_sector.id = data["sector_id"];
-			UtilityFunctions::print("runtime_sector_id: ", runtime_sector.id);
 			runtime_sector.center_position = data["center_position"];
 			runtime_sector.is_active = false; // Define false as native
 			Array pathnodes_arr = data["micro_pathnodes"];
+
 			for (int j = 0; j < pathnodes_arr.size(); j++) {
-				runtime_sector.micro_pathnodes.push_back(j);
+				runtime_sector.micro_pathnodes.push_back((uint32_t)pathnodes_arr[j]);
 			}
 			m_sectors_database[coord] = runtime_sector;
+
+			// Debug
+			Label3D* new_label = memnew(Label3D);
+			new_label->set_text(String::num_int64(runtime_sector.get_id()));
+			new_label->set_billboard_mode(BaseMaterial3D::BillboardMode::BILLBOARD_FIXED_Y);
+			new_label->set_pixel_size(0.036);
+			add_child(new_label);
+			new_label->set_global_position(Vector3(runtime_sector.center_position.x, runtime_sector.center_position.y + 3, runtime_sector.center_position.z));
 		}
 	}
 
@@ -260,6 +325,18 @@ namespace FlowAI {
 	// CALLS
 	/////////////////////////////////////////////////////////////////////////////
 
+	std::unordered_map<unsigned int, FlowAISector> FlowAIManager::get_sectors_list() {
+		std::unordered_map<unsigned int, FlowAISector> list;
+		for (auto &E : m_sectors_database) {
+			// It Only return sectors that have pathnodes!
+			// Maybe i can change it one day.
+			// I dit it because in get_random_path, its more functional get only the sections that have pathnodes.
+			if (E.value.micro_pathnodes.size() > 0) list[E.value.get_id()] = E.value;
+		}
+		return list;
+	}
+
+	// Works in editor and runtime
 	std::vector<FlowAIPathnode*> FlowAIManager::get_pathnode_list() {
 		TypedArray<Node> my_children = get_children();
 		std::vector<FlowAIPathnode*> arr_pathnode_list;

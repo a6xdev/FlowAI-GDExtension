@@ -4,11 +4,14 @@
 // Also draw a "X" in sections that have pathnodes attached
 // TODO: The use should choice if want do render this grid or not
 
+// If are you baking your pathnodes and the grid isnt updating while you rebuild this plugin many times with godot opened.
+// Dont worry, its completely normal. Just restart the project that the grid update will start working again.
+
+// maybe these colors var should be in plugin config
+Color sector_color = Color(0.0f, 1.0f, 0.5f, 0.4f);
+Color active_sector_color = Color(0.0f, 0.5f, 0.5f, 0.4f);
+
 namespace FlowAI {
-	// maybe these colors var should be in plugin config
-	Color line_color = Color(1.0f, 0.5f, 0.0f, 0.2f);
-	Color border_color = Color(1.0f, 0.2f, 0.0f, 0.6f);
-	Color active_sector_color = Color(0.0f, 1.0f, 0.5f, 0.4f);
 
 	void FlowAIManager::_draw_sections_grid() {
 		if (imm_grid_mesh.is_null()) return;
@@ -27,20 +30,18 @@ namespace FlowAI {
 		// Draw cols
 		for (int c = -half_cols; c <= half_cols; ++c) {
 			float x = c * section_size;
-			Color current_color = (c == -half_cols || c == half_cols) ? border_color : line_color;
-			imm_grid_mesh->surface_set_color(current_color);
+			imm_grid_mesh->surface_set_color(sector_color);
 			imm_grid_mesh->surface_add_vertex(Vector3(x, 0.05f, min_z));
-			imm_grid_mesh->surface_set_color(current_color);
+			imm_grid_mesh->surface_set_color(sector_color);
 			imm_grid_mesh->surface_add_vertex(Vector3(x, 0.05f, max_z));
 		}
 
 		// Draw rows
 		for (int r = -half_rows; r <= half_rows; ++r) {
 			float z = r * section_size;
-			Color current_color = (r == -half_rows || r == half_rows) ? border_color : line_color;
-			imm_grid_mesh->surface_set_color(current_color);
+			imm_grid_mesh->surface_set_color(sector_color);
 			imm_grid_mesh->surface_add_vertex(Vector3(min_x, 0.05f, z));
-			imm_grid_mesh->surface_set_color(current_color);
+			imm_grid_mesh->surface_set_color(sector_color);
 			imm_grid_mesh->surface_add_vertex(Vector3(max_x, 0.05f, z));
 		}
 
