@@ -18,6 +18,7 @@ namespace FlowAI {
 		ClassDB::bind_method(D_METHOD("set_prev_node_id"), &FlowAIPathnode::set_prev_node_id);
 		ClassDB::bind_method(D_METHOD("set_links"), &FlowAIPathnode::set_links);
 		ClassDB::bind_method(D_METHOD("set_path_layers", "p_layers"), &FlowAIPathnode::set_path_layers);
+		ClassDB::bind_method(D_METHOD("set_sector_id", "p_layers"), &FlowAIPathnode::set_sector_id);
 		ClassDB::bind_method(D_METHOD("set_sector_coord", "p_layers"), &FlowAIPathnode::set_sector_coord);
 		ClassDB::bind_method(D_METHOD("set_bidirectional", "p_layers"), &FlowAIPathnode::set_bidirectional);
 
@@ -25,11 +26,13 @@ namespace FlowAI {
 		ClassDB::bind_method(D_METHOD("get_prev_node_id"), &FlowAIPathnode::get_prev_node_id);
 		ClassDB::bind_method(D_METHOD("get_links"), &FlowAIPathnode::get_links);
 		ClassDB::bind_method(D_METHOD("get_path_layers"), &FlowAIPathnode::get_path_layers);
+		ClassDB::bind_method(D_METHOD("get_sector_id"), &FlowAIPathnode::get_sector_id);
 		ClassDB::bind_method(D_METHOD("get_sector_coord"), &FlowAIPathnode::get_sector_coord);
 		ClassDB::bind_method(D_METHOD("is_bidirectional"), &FlowAIPathnode::is_bidirectional);
 
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::INT, "id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_id", "get_id");
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::INT, "prev_pathnode_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_prev_node_id", "get_prev_node_id");
+		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::INT, "sector_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_sector_id", "get_sector_id");
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::PACKED_INT32_ARRAY, "links", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_links", "get_links");
 
 		ClassDB::bind_method(D_METHOD("add_next_pathnode"), &FlowAIPathnode::add_next_pathnode);

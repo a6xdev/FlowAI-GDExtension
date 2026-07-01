@@ -113,12 +113,13 @@ namespace FlowAI {
 
 			// Calculate mathematically which square this node is stepping on
 			Vector2i node_sector = _get_section_coords(pathnode->get_global_position());
-			UtilityFunctions::print("[FlowAI] Pathnode: ", pathnode->get_name(), " | Section Coords : ", node_sector);
-
+			
 			// If its within the grid limits, add it to that section list.
 			if (_is_within_grid_bounds(node_sector)) {
 				_sectors[node_sector].micro_pathnodes.push_back(pathnode->get_id());
+				pathnode->set_sector_id(_sectors[node_sector].get_id());
 				pathnode->set_sector_coord(node_sector);
+				UtilityFunctions::print("[FlowAI] Pathnode: ", pathnode->get_name(), " | Section Coords : ", node_sector, " | Section ID: ", _sectors[node_sector].get_id());
 				nodes_baked++;
 			}
 			else {
@@ -255,29 +256,28 @@ namespace FlowAI {
 			astar_macro->add_point(sector_ref.get_id(), sector_ref.get_center_position());
 		}
 
-		// Connect neighbor sections
-		Vector2i directions[] = {
-			Vector2i(1, 0),   // East
-			Vector2i(-1, 0),  // West
-			Vector2i(0, 1),   // South
-			Vector2i(0, -1),  // North
-			Vector2i(1, 1),   // Southeast (Diagonal)
-			Vector2i(-1, 1),  // Southwest (Diagonal)
-			Vector2i(1, -1),  // Northeast (Diagonal)
-			Vector2i(-1, -1)  // Northwest (Diagonal)
-		};
-		
-		for (const auto& E : m_sectors_database) {
-			Vector2i coord = E.key;
-			FlowAISector start_sector = E.value;
+		// Connect neighbor sections based on micro (pathnodes connections)
+		for (const auto& E : m_pathnodes_database) {
+			FlowAIPathnode* current_node = E.second;
+			if (!current_node) continue;
 
-			// 8 because we have 8 directions.
-			for (int i = 0; i < 8; i++) {
-				Vector2i neighbor_coord = coord + directions[i];
-				if (m_sectors_database.has(neighbor_coord)) {
-					FlowAISector neighbor_ref = get_sector_by_coord(neighbor_coord);
-					// Bi-direcional is always true.
-					astar_macro->connect_points(start_sector.get_id(), neighbor_ref.get_id(), true);
+			unsigned int current_sector_id = current_node->get_sector_id();
+			PackedInt32Array linked_ids = current_node->get_links();
+
+			for (int j = 0; j < linked_ids.size(); ++j) {
+				uint32_t target_node_id = linked_ids[j];
+
+				auto it = m_pathnodes_database.find(target_node_id);
+				if (it != m_pathnodes_database.end()) {
+					FlowAIPathnode* target_node = it->second;
+
+					if (target_node) {
+						unsigned int target_sector_id = target_node->get_sector_id();
+						if (current_sector_id != target_sector_id) {
+							astar_macro->connect_points(current_sector_id, target_sector_id, true);
+							UtilityFunctions::print("[FlowAI] AStar Macro Points: ", current_sector_id, ", and ", target_sector_id, " has Connected");
+						}
+					}
 				}
 			}
 		}
@@ -295,6 +295,9 @@ namespace FlowAI {
 
 		Dictionary main_payload = bake_data->get_sectors_payload();
 		Array sector_coords = main_payload.keys();
+
+		// update m_pathnodes_database
+		get_pathnode_list();
 
 		for (int i = 0; i < sector_coords.size(); i++) {
 			Vector2i coord = sector_coords[i];

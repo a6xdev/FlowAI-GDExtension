@@ -66,6 +66,7 @@ namespace FlowAI {
 
         Label* lbl_id = memnew(Label);
         Label* lbl_prev_node_id = memnew(Label);
+        Label* lbl_section_id = memnew(Label);
         Label* lbl_section_coord = memnew(Label);
         Label* lbl_links_title = memnew(Label);
         VBoxContainer* lbl_links_vbox_container = memnew(VBoxContainer);
@@ -74,6 +75,7 @@ namespace FlowAI {
 
         lbl_id->set_text("Pathnode ID: " + String::num_int64(target_pathnode->get_id()));
         lbl_prev_node_id->set_text("Previous Pathnode ID: " + prev_node_id_text);
+        lbl_section_id->set_text("Section ID: " + target_pathnode->get_sector_id());
         lbl_section_coord->set_text("Section Coord: " + target_pathnode->get_sector_coord());
         lbl_links_title->set_text("Links: [Array] - " + String::num_int64(target_pathnode->get_links().size()));
         btn_add->set_text("Add Next Pathnode");
@@ -95,6 +97,7 @@ namespace FlowAI {
 
         add_custom_control(lbl_id);
         add_custom_control(lbl_prev_node_id);
+        add_custom_control(lbl_section_id);
         add_custom_control(lbl_section_coord);
         add_custom_control(lbl_links_title);
         if (!target_pathnode->get_links().is_empty()) add_custom_control(lbl_links_vbox_container);

@@ -56,6 +56,7 @@ namespace FlowAI {
 		void set_prev_node_id(int32_t _id) { prev_pathnode_id = _id; };
 		void set_links(PackedInt32Array _links) { links = _links; };
 		void set_path_layers(uint32_t p_layers); // Needs update preview mesh color in cpp.
+		void set_sector_id(unsigned int _id) { sector_id = _id; };
 		void set_sector_coord(Vector2i _sector) { sector_coord = _sector; };
 		void set_bidirectional(bool _value) { m_bidirectional = _value; };
 
@@ -63,6 +64,7 @@ namespace FlowAI {
 		int32_t get_prev_node_id() const { return prev_pathnode_id; };
 		PackedInt32Array get_links() const { return links; };
 		uint32_t get_path_layers() const { return path_layers; }
+		unsigned int get_sector_id() const { return sector_id; }
 		Vector2i get_sector_coord() const { return sector_coord; };
 		bool is_bidirectional() const { return m_bidirectional; };
 	protected:
@@ -72,6 +74,7 @@ namespace FlowAI {
 		int32_t id = 0;
 		int32_t prev_pathnode_id = -1;
 		uint32_t path_layers = 1; // bitmask (ex: Pedestrian, Vehicle, Crosswalk, etc)
+		unsigned int sector_id = 0;
 		Vector2i sector_coord = Vector2i(0.0, 0.0);
 		PackedInt32Array links;
 		bool m_bidirectional = true;
