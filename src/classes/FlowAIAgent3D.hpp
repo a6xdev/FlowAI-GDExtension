@@ -24,23 +24,37 @@ namespace FlowAI {
 		void _notification(int p_what);
 	private:
 		CharacterBody3D* actor_owner = nullptr;
+		AStar3D* astar_macro = nullptr;
+		HashMap<unsigned int, FlowAISector*> current_sectors_in_corridor;
+		PackedVector3Array current_sectors_path;
+		PackedVector3Array current_pathnodes_path;
+		std::unordered_map<unsigned int, FlowAISector> manager_sector_list;
+		std::unordered_map<uint32_t, FlowAIPathnode*> manager_pathnode_list;
+		int current_path_index = 0;
+		bool path_complete = false;
 
 		MeshInstance3D* path_preview = nullptr;
 		Ref<ImmediateMesh> immediate_mesh;
 
-		HashMap<unsigned int, FlowAISector*> current_sectors_database;
-		PackedVector3Array current_true_sectors_path;
-		PackedVector3Array current_pathnodes_path;
-		int current_path_index = 0;
-		bool path_complete = false;
-
 		void request_path(Vector3 _pos_target);
-		void draw_agent_pathnode_path(PackedVector3Array p_path);
+		PackedVector3Array generate_section_path(Vector3 _pos);
+		PackedVector3Array generate_pathnode_path(
+			Vector3 _pos,
+			Ref<AStar3D>& astar_micro,
+			const std::unordered_map<uint32_t, FlowAIPathnode*>& manager_pathnode_list
+		);
+		void draw_agent_pathnode_path(PackedVector3Array p_path); // Debug
 
 		void set_next_path_index();
-		FlowAIPathnode* get_pathnode_closest_to_pos(Vector3 _pos);
+		FlowAIPathnode* get_pathnode_closest_to_pos_in_corridor(
+			const Vector3 _pos, 
+			Ref<AStar3D>& _astar_micro,
+			const std::unordered_map<uint32_t, FlowAIPathnode*>& pathnode_map
+		);
 
-		PackedVector3Array get_current_sections_path();
-		PackedVector3Array get_current_pathnodes_path();
+
+
+		PackedVector3Array get_current_sections_path() { return current_sectors_path; }
+		PackedVector3Array get_current_pathnodes_path() { return current_pathnodes_path; }
 	};
 }
