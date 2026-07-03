@@ -342,6 +342,33 @@ namespace FlowAI {
 		return nullptr;
 	}
 
+	FlowAISector* FlowAIManager::get_closest_sector_by_pos_that_have_pathnode(Vector3 _pos) const {
+		Vector2i start_coord = _get_section_coords(_pos);
+		auto it_start = m_sectors_database.find(start_coord);
+		if (it_start != m_sectors_database.end()) {
+			FlowAISector& current_sector = it_start->value;
+			if (!current_sector.micro_pathnodes.empty()) {
+				return &current_sector;
+			}
+		}
+
+		// If the current_sector.micro_pathnode is empty: Get the closest sector that isnt empty!
+		FlowAISector* closest_sector = nullptr;
+		float min_dist = INFINITY;
+
+		for (auto& E : m_sectors_database) {
+			FlowAISector& sector = E.value;
+			if (sector.micro_pathnodes.empty()) continue;
+			float dist = _pos.distance_to(sector.get_center_position());
+			if (dist < min_dist) {
+				min_dist = dist;
+				closest_sector = &sector;
+			}
+		}
+
+		return closest_sector;
+	}
+
 	// Discover which section the pathnode position is in
 	// The origin is always (0.0, 0.0, 0.0).
 	Vector2i FlowAIManager::_get_section_coords(Vector3 _global_pos) const {

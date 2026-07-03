@@ -66,12 +66,11 @@ namespace FlowAI {
 	void FlowAIAgent3D::set_random_path() {
 		path_complete = false;
 		std::vector<FlowAIPathnode*> pathnode_list = FlowAIManager::get_singleton()->get_pathnode_list();
-
 		int random_pathnode_index = UtilityFunctions::randi_range(0, (int)pathnode_list.size() - 1);
 		FlowAIPathnode* random_pathnode = pathnode_list[random_pathnode_index];
 
 		if (!random_pathnode) {
-			//UtilityFunctions::print("[FlowAI::set_random_path] Null Index Pathnode");
+			UtilityFunctions::print("[FlowAI::set_random_path] Null Index Pathnode");
 			return;
 		}
 
@@ -116,7 +115,6 @@ namespace FlowAI {
 	void FlowAIAgent3D::request_path(Vector3 _pos) {
 		if (!actor_owner || !astar_macro) return;
 
-		// 
 		current_sectors_in_corridor.clear();
 		current_sectors_path.clear();
 
@@ -211,8 +209,8 @@ namespace FlowAI {
 
 		// Get Section path corridor
 		// TODO: Get the closest sector that have pathnodes!!!
-		FlowAISector* start_sector = FlowAIManager::get_singleton()->get_sector_by_pos(actor_owner->get_global_position());
-		FlowAISector* end_sector = FlowAIManager::get_singleton()->get_sector_by_pos(_pos);
+		FlowAISector* start_sector = FlowAIManager::get_singleton()->get_closest_sector_by_pos_that_have_pathnode(actor_owner->get_global_position());
+		FlowAISector* end_sector = FlowAIManager::get_singleton()->get_closest_sector_by_pos_that_have_pathnode(_pos);
 
 		if (start_sector != nullptr && end_sector != nullptr) {
 			if (!astar_macro->has_point(start_sector->get_id()) || !astar_macro->has_point(end_sector->get_id())) {

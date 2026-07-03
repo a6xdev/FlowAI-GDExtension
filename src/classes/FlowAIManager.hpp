@@ -33,6 +33,7 @@ namespace FlowAI {
 		std::vector<FlowAIPathnode*> get_pathnode_list();
 		FlowAISector* get_sector_by_coord(Vector2i _coord) const;
 		FlowAISector* get_sector_by_pos(Vector3 _pos) const;
+		FlowAISector* get_closest_sector_by_pos_that_have_pathnode(Vector3 _pos) const;
 	protected:
 		static void _bind_methods();
 		void _notification(int p_what);
