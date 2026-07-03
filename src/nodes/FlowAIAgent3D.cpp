@@ -15,7 +15,10 @@ namespace FlowAI {
 
 		ClassDB::bind_method(D_METHOD("set_target_pathnode"), &FlowAIAgent3D::set_target_pathnode);
 		ClassDB::bind_method(D_METHOD("set_random_path"), &FlowAIAgent3D::set_random_path);
+
 		ClassDB::bind_method(D_METHOD("get_next_pathnode_position"), &FlowAIAgent3D::get_next_pathnode_position);
+		ClassDB::bind_method(D_METHOD("get_current_manager"), &FlowAIAgent3D::get_current_manager);
+		ClassDB::bind_method(D_METHOD("get_pathnode_closest_to_pos"), &FlowAIAgent3D::get_pathnode_closest_to_pos);
 	}
 
 	void FlowAIAgent3D::_notification(int p_what) {
@@ -55,7 +58,10 @@ namespace FlowAI {
 	// PUBLIC CALLS
 	/////////////////////////////////////////////////////////////////////////////
 
-	void FlowAIAgent3D::set_target_pathnode(FlowAIPathnode* pathnode) {}
+	void FlowAIAgent3D::set_target_pathnode(FlowAIPathnode* target_pathnode) {
+		path_complete = false;
+		request_path(target_pathnode->get_global_position());
+	}
 
 	void FlowAIAgent3D::set_random_path() {
 		path_complete = false;
@@ -87,6 +93,21 @@ namespace FlowAI {
 			if (is_actor_valid) return actor_owner->get_global_position();
 		}
 		return Vector3(0.0, 0.0, 0.0);
+	}
+
+	FlowAIManager* FlowAIAgent3D::get_current_manager() const { return FlowAIManager::get_singleton(); }
+
+	FlowAIPathnode* FlowAIAgent3D::get_pathnode_closest_to_pos(const Vector3 _pos) const {
+		FlowAIPathnode* closest_pathnode = nullptr;
+		double min_dist = INFINITY;
+		for (const auto pathnode : FlowAIManager::get_singleton()->get_pathnode_list()) {
+			double distance_to_node = _pos.distance_to(pathnode->get_global_position());
+			if (distance_to_node < min_dist) {
+				min_dist = distance_to_node;
+				closest_pathnode = pathnode;
+			}
+		}
+		return closest_pathnode;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -143,7 +164,7 @@ namespace FlowAI {
 			}
 		}
 
-		// Swap to dont crash the game!
+		// Swap the "current_pathnodes_path" to dont crash the game!
 		current_path_index = 0;
 		path_complete = false;
 		current_pathnodes_path = generate_pathnode_path(_pos, astar_micro, manager_pathnode_list);
@@ -189,6 +210,7 @@ namespace FlowAI {
 		PackedVector3Array path_data;
 
 		// Get Section path corridor
+		// TODO: Get the closest sector that have pathnodes!!!
 		FlowAISector* start_sector = FlowAIManager::get_singleton()->get_sector_by_pos(actor_owner->get_global_position());
 		FlowAISector* end_sector = FlowAIManager::get_singleton()->get_sector_by_pos(_pos);
 

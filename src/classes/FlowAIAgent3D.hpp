@@ -1,7 +1,8 @@
 #include "../FlowAI.hpp"
 
 namespace FlowAI {
-	class FlowAIPathnode;	
+	class FlowAIPathnode;
+	class FlowAIManager;
 
 	// ----------------------------------------- //
 	// Mr. Bond (our Agent lol)
@@ -16,9 +17,12 @@ namespace FlowAI {
 
 		bool is_path_complete() const { return path_complete; }
 
-		void set_target_pathnode(FlowAIPathnode* pathnode);
+		void set_target_pathnode(FlowAIPathnode* target_pathnode);
 		void set_random_path();
+
 		Vector3 get_next_pathnode_position();
+		FlowAIManager* get_current_manager() const;
+		FlowAIPathnode* get_pathnode_closest_to_pos(const Vector3 _pos) const;
 	protected:
 		static void _bind_methods();
 		void _notification(int p_what);
@@ -46,14 +50,12 @@ namespace FlowAI {
 		void draw_agent_pathnode_path(PackedVector3Array p_path); // Debug
 
 		void set_next_path_index();
+
 		FlowAIPathnode* get_pathnode_closest_to_pos_in_corridor(
 			const Vector3 _pos, 
 			Ref<AStar3D>& _astar_micro,
 			const std::unordered_map<uint32_t, FlowAIPathnode*>& pathnode_map
 		);
-
-
-
 		PackedVector3Array get_current_sections_path() { return current_sectors_path; }
 		PackedVector3Array get_current_pathnodes_path() { return current_pathnodes_path; }
 	};
