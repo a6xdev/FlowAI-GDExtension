@@ -41,7 +41,7 @@ namespace FlowAI {
 		Ref<ImmediateMesh> immediate_mesh;
 
 		void request_path(Vector3 _pos_target);
-		PackedVector3Array generate_section_path(Vector3 _pos);
+		void generate_section_path(Vector3 _pos);
 		PackedVector3Array generate_pathnode_path(
 			Vector3 _pos,
 			Ref<AStar3D>& astar_micro,

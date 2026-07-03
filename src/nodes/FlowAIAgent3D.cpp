@@ -121,9 +121,9 @@ namespace FlowAI {
 		Ref<AStar3D> astar_micro; // Local AStar
 		astar_micro.instantiate();
 
-		current_sectors_path = generate_section_path(_pos);
+		generate_section_path(_pos);
 
-		if (current_sectors_path.size() == 0) return;
+		if (current_sectors_in_corridor.is_empty()) return;
 
 		// TODO: CREATE A FUNCTION TO ADD POINTS
 		// -------------- (Micro) --------------
@@ -203,19 +203,18 @@ namespace FlowAI {
 		return closest_pathnode;
 	}
 
-	PackedVector3Array FlowAIAgent3D::generate_section_path(Vector3 _pos) {
-		// -------------- (Macro) --------------
-		PackedVector3Array path_data;
-
+	// Dont need return anything because it just populate the current_sectors_in_corridor to use on "request_path"
+	void FlowAIAgent3D::generate_section_path(Vector3 _pos) { // -------------- (Macro Graph) --------------
 		// Get Section path corridor
 		// TODO: Get the closest sector that have pathnodes!!!
 		FlowAISector* start_sector = FlowAIManager::get_singleton()->get_closest_sector_by_pos_that_have_pathnode(actor_owner->get_global_position());
 		FlowAISector* end_sector = FlowAIManager::get_singleton()->get_closest_sector_by_pos_that_have_pathnode(_pos);
 
+		// Check if the start_sector and end_sector are the same
+
 		if (start_sector != nullptr && end_sector != nullptr) {
 			if (!astar_macro->has_point(start_sector->get_id()) || !astar_macro->has_point(end_sector->get_id())) {
 				UtilityFunctions::print("[FlowAI] Sector not in macro graph: ", start_sector->get_id(), " / ", end_sector->get_id());
-				return PackedVector3Array();
 			}
 
 			// Check if is the same sector.
@@ -224,17 +223,19 @@ namespace FlowAI {
 				UtilityFunctions::print("Start Sector: ", start_sector->get_id());
 				UtilityFunctions::print("End Sector: ", end_sector->get_id());
 
-				path_data = astar_macro->get_point_path(start_sector->get_id(), end_sector->get_id());
+				current_sectors_path = astar_macro->get_point_path(start_sector->get_id(), end_sector->get_id());
 
 				// we need to store the FlowAISector in a HashMap to get the micro_pathnodes list.
-				for (int i = 0; i < path_data.size(); i++) {
-					FlowAISector* sector_node_ref = FlowAIManager::get_singleton()->get_sector_by_pos(path_data[i]);
+				for (int i = 0; i < current_sectors_path.size(); i++) {
+					FlowAISector* sector_node_ref = FlowAIManager::get_singleton()->get_sector_by_pos(current_sectors_path[i]);
 					if (sector_node_ref != nullptr) current_sectors_in_corridor[sector_node_ref->get_id()] = sector_node_ref;
 					else UtilityFunctions::print("Return sector node ref nullptr");
 				}
 			}
+			else {
+				current_sectors_in_corridor[start_sector->get_id()] = start_sector;
+			}
 		}
-		return path_data;
 	}
 
 	PackedVector3Array FlowAIAgent3D::generate_pathnode_path(Vector3 _pos, Ref<AStar3D>& astar_micro, const std::unordered_map<uint32_t, FlowAIPathnode*>& manager_pathnode_list) {
@@ -254,8 +255,8 @@ namespace FlowAI {
 			}
 
 			if (start_pathnode->get_id() == end_pathnode->get_id()) {
-				UtilityFunctions::print("[FlowAI] Start e end são o mesmo pathnode");
-				return PackedVector3Array();
+				path_data.push_back(start_pathnode->get_global_position());
+				return path_data;
 			}
 
 			PackedInt64Array micro_id_path = astar_micro->get_id_path(start_pathnode->get_id(), end_pathnode->get_id());
@@ -268,8 +269,6 @@ namespace FlowAI {
 				}
 				path_data.push_back(it->second->get_global_position());
 			}
-
-			//current_pathnodes_path = astar_micro->get_point_path(start_pathnode->get_id(), end_pathnode->get_id());
 		}		
 		return path_data;
 	}
