@@ -41,12 +41,9 @@ namespace FlowAI {
 		Ref<ImmediateMesh> immediate_mesh;
 
 		void request_path(Vector3 _pos_target);
-		void generate_section_path(Vector3 _pos);
-		PackedVector3Array generate_pathnode_path(
-			Vector3 _pos,
-			Ref<AStar3D>& astar_micro,
-			const std::unordered_map<uint32_t, FlowAIPathnode*>& manager_pathnode_list
-		);
+		bool generate_pathnode_path(Vector3 _pos, FlowAISector* start_sector, FlowAISector* end_sector);
+		bool try_build_micro_path(Vector3 _pos);
+
 		void draw_agent_pathnode_path(PackedVector3Array p_path); // Debug
 
 		void set_next_path_index();

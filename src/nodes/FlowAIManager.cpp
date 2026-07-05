@@ -332,6 +332,15 @@ namespace FlowAI {
 		return nullptr;
 	}
 
+	FlowAISector* FlowAIManager::get_sector_by_id(uint32_t _id) const {
+		for (auto& E : m_sectors_database) {
+			if (E.value.get_id() == _id) {
+				return &(E.value);
+			}
+		}
+		return nullptr;
+	}
+
 	// this function can only be used on runtime.
 	FlowAISector* FlowAIManager::get_sector_by_pos(Vector3 _pos) const {
 		Vector2i coord = _get_section_coords(_pos);
