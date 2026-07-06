@@ -88,7 +88,7 @@ namespace FlowAI {
 		if (_connections_mat.is_null()) {
 			_connections_mat.instantiate();
 			_connections_mat->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
-			_connections_mat->set_albedo(FlowAIDebug::pathnode_connections_color);
+			_connections_mat->set_flag(BaseMaterial3D::FLAG_ALBEDO_FROM_VERTEX_COLOR, true);
 		}
 
 		// In this way the user can update the color in real time. I'll do a support to it one day.
@@ -123,12 +123,11 @@ namespace FlowAI {
 				end_pos.y += 0.1f;
 
 				if (target_node) {
-					imm_pathnode_connections_mesh->surface_set_color(FlowAIDebug::pathnode_connections_color);
+					imm_pathnode_connections_mesh->surface_set_color(get_color_from_navigation_layer_mask(current_node->get_path_layers()));
 					imm_pathnode_connections_mesh->surface_add_vertex(start_pos);
-					imm_pathnode_connections_mesh->surface_set_color(FlowAIDebug::pathnode_connections_color);
+					imm_pathnode_connections_mesh->surface_set_color(get_color_from_navigation_layer_mask(target_node->get_path_layers()));
 					imm_pathnode_connections_mesh->surface_add_vertex(end_pos);
 				}
-
 			}
 		}
 		imm_pathnode_connections_mesh->surface_end();

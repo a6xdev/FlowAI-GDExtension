@@ -1,6 +1,7 @@
 #include "FlowAIEditor.hpp"
 #include "../classes/FlowAIManager.hpp"
 #include "../classes/FlowAIPathnode.hpp"
+#include "../classes/FlowAIAgent3D.hpp"
 #include <godot_cpp/classes/v_box_container.hpp>
 
 using namespace godot;
@@ -107,6 +108,14 @@ namespace FlowAI {
         add_custom_control(btn_snap);
     }
 
+    void FlowAIEditorInspector::_parse_agent_3d(Object* target_node) {
+        FlowAIAgent3D* agent_3d = Object::cast_to<FlowAIAgent3D>(target_node);
+        if (!agent_3d) return;
+    }
+
+    /// ------------------------------------------
+    /// SIGNALS
+    /// ------------------------------------------
     void FlowAIEditorInspector::signal_manager_bake() {
         if (FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_node)) {
             manager->bake_sections();

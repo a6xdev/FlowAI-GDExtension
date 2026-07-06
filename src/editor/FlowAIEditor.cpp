@@ -44,7 +44,6 @@ namespace FlowAI {
 
         for (int i = 1; i <= MAX_LAYERS; ++i) {
             String color_path = "flow_ai/layer_colors/layer_" + String::num_int64(i);
-
             if (!settings->has_setting(color_path)) {
                 settings->set_setting(color_path, default_layer_color);
             }
@@ -52,8 +51,6 @@ namespace FlowAI {
             settings->set_initial_value(color_path, default_layer_color);
             settings->add_property_info(PropertyInfo(Variant::COLOR, color_path));
         }
-
-
 
         // save this shit
         settings->save();
@@ -64,4 +61,26 @@ namespace FlowAI {
     void FlowAIEditorPlugin::_edit(Object* p_object) { node_selected = p_object; }
 
     void FlowAIEditorPlugin::_make_visible(bool p_visible) {}
+
+    // CALLS
+    Color get_color_from_navigation_layer_mask(uint32_t _layer_mask) {
+        godot::ProjectSettings* settings = godot::ProjectSettings::get_singleton();
+        Color default_color = Color(1.0f, 1.0f, 1.0f);
+        int active_layer = 1;
+
+        for (int i = 0; i < 32; ++i) {
+            if (_layer_mask & (1 << i)) {
+                active_layer = i + 1;
+                break;
+            }
+        }
+
+        String color_path = "flow_ai/layer_colors/layer_" + String::num_int64(active_layer);
+
+        if (settings && settings->has_setting(color_path)) {
+            return VariantCaster<Color>::cast(settings->get_setting(color_path));
+        }
+
+        return default_color;
+    }
 }

@@ -30,6 +30,7 @@ namespace FlowAI {
 		uint16_t get_section_cols() const { return section_cols; }
 		Ref<FlowAIBakeData> get_bake_data() const { return bake_data; }
 		std::unordered_map<unsigned int, FlowAISector> get_sectors_list();
+		std::vector<FlowAIPathnode*> get_pathnode_list_by_layer(uint32_t _layer);
 		std::vector<FlowAIPathnode*> get_pathnode_list();
 		FlowAISector* get_sector_by_id(uint32_t _id) const;
 		FlowAISector* get_sector_by_coord(Vector2i _coord) const;

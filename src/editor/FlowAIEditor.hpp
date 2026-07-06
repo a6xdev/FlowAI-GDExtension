@@ -28,6 +28,7 @@ namespace FlowAI {
 
 		void _parse_manager(Object* target_node);
 		void _parse_pathnode(Object* target_node);
+		void _parse_agent_3d(Object* target_node);
 
 		void signal_manager_bake();
 		void signal_manager_add_new_pathnode();

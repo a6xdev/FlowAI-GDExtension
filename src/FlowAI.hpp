@@ -53,4 +53,8 @@ namespace FlowAI {
 	protected:
 		static void _bind_methods();
 	};
+
+	void HelloWorld(std::string _text = "print") { std::cout << _text << std::endl; }
+
+	Color get_color_from_navigation_layer_mask(uint32_t _layer_mask);
 }

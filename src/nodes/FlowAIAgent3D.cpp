@@ -11,14 +11,35 @@ namespace FlowAI {
 
 	// PROTECTED
 	void FlowAIAgent3D::_bind_methods() {
+		BIND_ENUM_CONSTANT(PATH_FOUND);
+		BIND_ENUM_CONSTANT(PATH_NOT_FOUND);
+		BIND_ENUM_CONSTANT(PATH_LAYER_BLOCKED);
+
 		ClassDB::bind_method(D_METHOD("is_path_complete"), &FlowAIAgent3D::is_path_complete);
 
-		ClassDB::bind_method(D_METHOD("set_target_pathnode"), &FlowAIAgent3D::set_target_pathnode);
-		ClassDB::bind_method(D_METHOD("set_random_path"), &FlowAIAgent3D::set_random_path);
+		ClassDB::bind_method(D_METHOD("set_target_pathnode", "target_pathnode", "layers_mask"), &FlowAIAgent3D::set_target_pathnode);
+		ClassDB::bind_method(D_METHOD("set_random_path", "strict_layers"), &FlowAIAgent3D::set_random_path);
+		ClassDB::bind_method(D_METHOD("set_path_desired_distance", "_value"), &FlowAIAgent3D::set_path_desired_distance);
+		ClassDB::bind_method(D_METHOD("set_path_layers", "p_layers"), &FlowAIAgent3D::set_path_layers);
 
 		ClassDB::bind_method(D_METHOD("get_next_pathnode_position"), &FlowAIAgent3D::get_next_pathnode_position);
 		ClassDB::bind_method(D_METHOD("get_current_manager"), &FlowAIAgent3D::get_current_manager);
 		ClassDB::bind_method(D_METHOD("get_pathnode_closest_to_pos"), &FlowAIAgent3D::get_pathnode_closest_to_pos);
+		ClassDB::bind_method(D_METHOD("get_path_desired_distance"), &FlowAIAgent3D::get_path_desired_distance);
+		ClassDB::bind_method(D_METHOD("get_path_layers"), &FlowAIAgent3D::get_path_layers);
+
+		ClassDB::add_property(
+			"FlowAIAgent3D",
+			PropertyInfo(
+				Variant::INT,
+				"path_layers",
+				PROPERTY_HINT_LAYERS_3D_NAVIGATION,
+				"",
+				PROPERTY_USAGE_DEFAULT
+			),
+			"set_path_layers",
+			"get_path_layers"
+		);
 	}
 
 	void FlowAIAgent3D::_notification(int p_what) {
@@ -58,23 +79,23 @@ namespace FlowAI {
 	// PUBLIC CALLS
 	/////////////////////////////////////////////////////////////////////////////
 
-	void FlowAIAgent3D::set_target_pathnode(FlowAIPathnode* target_pathnode) {
+	FlowAIPathResult FlowAIAgent3D::set_target_pathnode(FlowAIPathnode* target_pathnode, uint32_t layers_mask, bool strict_layers) {
 		path_complete = false;
-		request_path(target_pathnode->get_global_position());
+		return request_path(target_pathnode->get_global_position(), layers_mask, strict_layers);
 	}
 
-	void FlowAIAgent3D::set_random_path() {
-		path_complete = false;
-		std::vector<FlowAIPathnode*> pathnode_list = FlowAIManager::get_singleton()->get_pathnode_list();
+	FlowAIPathResult FlowAIAgent3D::set_random_path(bool strict_layers) {
+		std::vector<FlowAIPathnode*> pathnode_list = FlowAIManager::get_singleton()->get_pathnode_list_by_layer(get_path_layers());
 		int random_pathnode_index = UtilityFunctions::randi_range(0, (int)pathnode_list.size() - 1);
 		FlowAIPathnode* random_pathnode = pathnode_list[random_pathnode_index];
+		path_complete = false;
 
 		if (!random_pathnode) {
 			UtilityFunctions::print("[FlowAI::set_random_path] Null Index Pathnode");
-			return;
+			return PATH_NOT_FOUND;
 		}
 
-		request_path(random_pathnode->get_global_position());
+		return request_path(random_pathnode->get_global_position(), get_path_layers(), strict_layers);
 	}
 
 	Vector3 FlowAIAgent3D::get_next_pathnode_position() {
@@ -112,8 +133,10 @@ namespace FlowAI {
 	/////////////////////////////////////////////////////////////////////////////
 	// PRIVATE CALLS
 	/////////////////////////////////////////////////////////////////////////////
-	void FlowAIAgent3D::request_path(Vector3 _pos) {
-		if (!actor_owner || !astar_macro) return;
+	FlowAIPathResult FlowAIAgent3D::request_path(Vector3 _pos, uint32_t _layer_mask, bool strict_layers) {
+		FlowAIPathResult path_result = PATH_NOT_FOUND;
+
+		if (!actor_owner || !astar_macro) return path_result;
 
 		current_sectors_in_corridor.clear();
 		current_sectors_path.clear();
@@ -125,13 +148,14 @@ namespace FlowAI {
 		if (start_sector != nullptr && end_sector != nullptr) {
 			if (!astar_macro->has_point(start_sector->get_id()) || !astar_macro->has_point(end_sector->get_id())) {
 				UtilityFunctions::print("[FlowAI] Sector not in macro graph: ", start_sector->get_id(), " / ", end_sector->get_id());
+				path_result = PATH_NOT_FOUND;
 			}
 
-			// Check if start_sector and end_sector ain't the same sector.
+			// Check if start_sector and end_sector dain't the same sector.
 			UtilityFunctions::print("Start Sector: ", start_sector->get_id());
 			UtilityFunctions::print("End Sector: ", end_sector->get_id());
-			if (start_sector->get_id() != end_sector->get_id()) {
 
+			if (start_sector->get_id() != end_sector->get_id()) {
 				current_sectors_path = astar_macro->get_point_path(start_sector->get_id(), end_sector->get_id());
 
 				// we need to store the FlowAISector in a HashMap to get the micro_pathnodes list.
@@ -145,13 +169,51 @@ namespace FlowAI {
 			}
 		}
 
-		generate_pathnode_path(_pos, start_sector, end_sector);
+		path_result = generate_pathnode_path(_pos, start_sector, end_sector, _layer_mask, strict_layers);
 		draw_agent_pathnode_path(current_pathnodes_path);
 
 		UtilityFunctions::print("current_sectors_path.size(): ", current_sectors_path.size());
 		UtilityFunctions::print("current_pathnodes_path.size(): ", current_pathnodes_path.size());
 
-		return;
+		return path_result;
+	}
+
+	FlowAIPathResult FlowAIAgent3D::generate_pathnode_path(Vector3 _pos, FlowAISector* start_sector, FlowAISector* end_sector, uint32_t _layers, bool strict_layers) {
+		bool success = try_build_micro_path(_pos, _layers);
+		FlowAIPathResult path_result;
+
+		if (!success) { // If it failure, expand corridor and try again
+			PackedInt64Array neighbors = astar_macro->get_point_connections(start_sector->get_id()); // get connected sections neighbors
+			for (int i = 0; i < neighbors.size(); i++) {
+				FlowAISector* neighbor = FlowAIManager::get_singleton()->get_sector_by_id((uint32_t)neighbors[i]);
+				if (neighbor) current_sectors_in_corridor[neighbor->get_id()] = neighbor;
+			}
+
+			success = try_build_micro_path(_pos, _layers);
+
+			if (!success) { // if still failure, use complete sections macro
+				current_sectors_in_corridor.clear();
+				for (int i = 0; i < neighbors.size(); i++) {
+					FlowAISector* s = FlowAIManager::get_singleton()->get_sector_by_id((uint32_t)neighbors[i]);
+					if (s) current_sectors_in_corridor[s->get_id()] = s;
+				}
+				current_sectors_in_corridor[start_sector->get_id()] = start_sector;
+				success = try_build_micro_path(_pos, _layers);
+			}
+
+			if (!success) {
+				if (strict_layers) return PATH_LAYER_BLOCKED;
+
+				bool path_exists_ignoring_layers = try_build_micro_path(_pos, _layers, true); // Test without layers
+				if (path_exists_ignoring_layers) {
+					return path_result = PATH_LAYER_BLOCKED;
+				}
+				else {
+					return path_result = PATH_NOT_FOUND;
+				}
+			}
+		}
+		return (success) ? PATH_FOUND : path_result;
 	}
 
 	void FlowAIAgent3D::set_next_path_index() {
@@ -183,13 +245,14 @@ namespace FlowAI {
 		return closest_pathnode;
 	}
 
-	bool FlowAIAgent3D::try_build_micro_path(Vector3 _pos) {
+	bool FlowAIAgent3D::try_build_micro_path(Vector3 _pos, uint32_t _layers, bool ignore_layers) {
 		Ref<AStar3D> astar_micro; // Local AStar
 		PackedVector3Array path_data;
 
 		astar_micro.instantiate();
 
 		if (current_sectors_in_corridor.is_empty()) return false;
+
 
 		// -------------- (Micro) --------------
 		// Add points - section pathnodes
@@ -199,9 +262,12 @@ namespace FlowAI {
 
 			for (uint32_t pathnode_id : it->second.get_pathnodes()) {
 				auto node_it = manager_pathnode_list.find(pathnode_id);
-				if (node_it == manager_pathnode_list.end()) continue;
+				if (node_it == manager_pathnode_list.end()) 
+					continue;
+
 				FlowAIPathnode* ref = node_it->second;
-				if (ref) {
+				bool layer_compatible = (ref->get_path_layers() & _layers) > 0;
+				if (ref && (ignore_layers || layer_compatible)) {
 					astar_micro->add_point(pathnode_id, ref->get_global_position()); // TODO: WEIGHT_SCALE soon...
 				}
 			}
@@ -216,12 +282,14 @@ namespace FlowAI {
 				auto origin_it = manager_pathnode_list.find(origin_id);
 				if (origin_it == manager_pathnode_list.end()) continue;
 				FlowAIPathnode* origin = origin_it->second;
-				if (!origin) continue;
+				bool layer_compatible = (origin->get_path_layers() & _layers) > 0;
 
-				for (auto link_id : origin->get_links()) {
-					if (!astar_micro->has_point(link_id)) continue;
-					if (!astar_micro->are_points_connected(origin_id, link_id, origin->is_bidirectional())) {
-						astar_micro->connect_points(origin_id, link_id, origin->is_bidirectional());
+				if (origin && (ignore_layers || layer_compatible)) {
+					for (auto link_id : origin->get_links()) {
+						if (!astar_micro->has_point(link_id)) continue;
+						if (!astar_micro->are_points_connected(origin_id, link_id, origin->is_bidirectional())) {
+							astar_micro->connect_points(origin_id, link_id, origin->is_bidirectional());
+						}
 					}
 				}
 			}
@@ -247,50 +315,14 @@ namespace FlowAI {
 			for (int i = 0; i < micro_id_path.size(); i++) {
 				uint32_t node_id = (uint32_t)micro_id_path[i];
 				auto it = manager_pathnode_list.find(node_id);
-				if (it == manager_pathnode_list.end() || !it->second) return false;
+				if (it == manager_pathnode_list.end() || !it->second) continue;
 				path_data.push_back(it->second->get_global_position());
 			}
 		}
-
 
 		current_path_index = 0;
 		path_complete = false;
 		current_pathnodes_path = path_data;
 		return true;
-	}
-
-	bool FlowAIAgent3D::generate_pathnode_path(Vector3 _pos, FlowAISector* start_sector, FlowAISector* end_sector) {
-		bool success = try_build_micro_path(_pos);
-		UtilityFunctions::print("[FlowAI::generate_pathnode_path] Success: ", success);
-
-		// If it failure, expand corridor and try again
-		if (!success) {
-			UtilityFunctions::print("[FlowAI] Caminho local falhou, expandindo via macro...");
-
-			// get connected sections neighbors
-			PackedInt64Array neighbors = astar_macro->get_point_connections(start_sector->get_id());
-			for (int i = 0; i < neighbors.size(); i++) {
-				FlowAISector* neighbor = FlowAIManager::get_singleton()->get_sector_by_id((uint32_t)neighbors[i]);
-				if (neighbor) current_sectors_in_corridor[neighbor->get_id()] = neighbor;
-			}
-
-			success = try_build_micro_path(_pos);
-			UtilityFunctions::print("Current Pathnodes Path: ", current_pathnodes_path.size());
-
-			// if still failure, use complete sections macro
-			if (!success) {
-				UtilityFunctions::print("[FlowAI] Expandindo corredor completo...");
-				current_sectors_in_corridor.clear();
-
-				for (int i = 0; i < neighbors.size(); i++) {
-					FlowAISector* s = FlowAIManager::get_singleton()->get_sector_by_id((uint32_t)neighbors[i]);
-					if (s) current_sectors_in_corridor[s->get_id()] = s;
-				}
-				current_sectors_in_corridor[start_sector->get_id()] = start_sector;
-				UtilityFunctions::print("Current Pathnodes Path: ", current_pathnodes_path.size());
-				success = try_build_micro_path(_pos);
-			}
-		}
-		return success;
 	}
 }
