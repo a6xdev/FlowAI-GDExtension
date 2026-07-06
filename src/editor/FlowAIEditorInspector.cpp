@@ -7,11 +7,13 @@
 using namespace godot;
 
 namespace FlowAI {
-    // ----------------------- //
-    //      FlowAIPathnode
-    // ----------------------- //
+    FlowAIPathnode* pathnode_selected_01 = nullptr;
+    FlowAIPathnode* pathnode_selected_02 = nullptr;
+
     void FlowAIEditorInspector::_bind_methods() {
         ClassDB::bind_method(D_METHOD("signal_manager_bake"), &FlowAIEditorInspector::signal_manager_bake);
+        ClassDB::bind_method(D_METHOD("signal_manager_connect_pathnodes"), &FlowAIEditorInspector::signal_manager_connect_pathnodes);
+        ClassDB::bind_method(D_METHOD("signal_manager_disconnect_pathnodes"), &FlowAIEditorInspector::signal_manager_disconnect_pathnodes);
         ClassDB::bind_method(D_METHOD("signal_manager_add_new_pathnode"), &FlowAIEditorInspector::signal_manager_add_new_pathnode);
         ClassDB::bind_method(D_METHOD("signal_pathnode_add_next_pathnode"), &FlowAIEditorInspector::signal_pathnode_add_next_pathnode);
         ClassDB::bind_method(D_METHOD("signal_pathnode_snap_to_ground"), &FlowAIEditorInspector::signal_pathnode_snap_to_ground);
@@ -21,11 +23,31 @@ namespace FlowAI {
         if (p_object == nullptr) return false;
         bool is_manager = Object::cast_to<FlowAIManager>(p_object) != nullptr;
         bool is_pathnode = Object::cast_to<FlowAIPathnode>(p_object) != nullptr;
+
+        TypedArray<Node> selected = EditorInterface::get_singleton()->get_selection()->get_selected_nodes();
+        if (selected.size() > 0) {
+            if (Object::cast_to<FlowAIPathnode>(selected[0]) != nullptr) {
+                return true;
+            }
+        }
+
         return is_manager || is_pathnode;
     }
 
     void FlowAIEditorInspector::_parse_begin(Object* p_object) {
         if (p_object == nullptr) return;
+
+        // Check if have 2 pathnodes selected
+        TypedArray<Node> selected_nodes = EditorInterface::get_singleton()->get_selection()->get_selected_nodes();
+
+        if (selected_nodes.size() == 2) {
+            FlowAIPathnode* node_A = Object::cast_to<FlowAIPathnode>(selected_nodes[0]);
+            FlowAIPathnode* node_B = Object::cast_to<FlowAIPathnode>(selected_nodes[1]);
+
+            if (node_A && node_B) {
+                _parser_two_pathnodes(node_A, node_B);
+            }
+        }
 
         target_node = p_object;
         if (FlowAIManager* manager = Object::cast_to<FlowAIManager>(p_object)) {
@@ -39,6 +61,30 @@ namespace FlowAI {
         }
     }
 
+    // ----------------------- //
+    // When user select two pathnodes on SceneTree
+    // ----------------------- //
+    void FlowAIEditorInspector::_parser_two_pathnodes(FlowAIPathnode* node_a, FlowAIPathnode* node_b) {
+        pathnode_selected_01 = node_a; pathnode_selected_02 = node_b;
+
+        Button* btn_connect_pathnodes = memnew(Button);
+        Button* btn_disconnect_pathnodes = memnew(Button);
+
+        String btn_title_text = "Pathnodes: '" + node_a->get_name() + "' to '" + node_b->get_name() + "'";
+
+        btn_connect_pathnodes->set_text("Connect " + btn_title_text);
+        btn_disconnect_pathnodes->set_text("Disconnect " + btn_title_text);
+
+        btn_connect_pathnodes->connect("pressed", Callable(this, "signal_manager_connect_pathnodes"));
+        btn_disconnect_pathnodes->connect("pressed", Callable(this, "signal_manager_disconnect_pathnodes"));
+
+        add_custom_control(btn_connect_pathnodes);
+        add_custom_control(btn_disconnect_pathnodes);
+    }
+
+    // ----------------------- //
+    //      FlowAIManager
+    // ----------------------- //
     void FlowAIEditorInspector::_parse_manager(Object* target_node) {
         FlowAIManager* target_manager = Object::cast_to<FlowAIManager>(target_node);
         if (!target_manager) return;
@@ -56,6 +102,9 @@ namespace FlowAI {
         add_custom_control(btn_add_new_pathnode);
     }
 
+    // ----------------------- //
+    //      FlowAIPathnode
+    // ----------------------- //
     void FlowAIEditorInspector::_parse_pathnode(Object* target_node) {
         FlowAIPathnode* target_pathnode = Object::cast_to<FlowAIPathnode>(target_node);
         if (!target_pathnode) return;
@@ -119,6 +168,18 @@ namespace FlowAI {
     void FlowAIEditorInspector::signal_manager_bake() {
         if (FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_node)) {
             manager->bake_sections();
+        }
+    }
+
+    void FlowAIEditorInspector::signal_manager_connect_pathnodes() {
+        if (pathnode_selected_01 && pathnode_selected_02) {
+            FlowAIManager::get_singleton()->connect_pathnodes(pathnode_selected_01, pathnode_selected_02);
+        }
+    }
+
+    void FlowAIEditorInspector::signal_manager_disconnect_pathnodes() {
+        if (pathnode_selected_01 && pathnode_selected_02) {
+            FlowAIManager::get_singleton()->disconnect_pathnodes(pathnode_selected_01, pathnode_selected_02);
         }
     }
 

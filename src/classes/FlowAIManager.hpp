@@ -15,14 +15,16 @@ namespace FlowAI {
 		~FlowAIManager();
 
 		void bake_sections();
+		void connect_pathnodes(FlowAIPathnode* from_node, FlowAIPathnode* to_node);
+		void disconnect_pathnodes(FlowAIPathnode* from_node, FlowAIPathnode* to_node);
 		void add_new_pathnode(int32_t prev_pathnode_id = -1);
+		static FlowAIManager* get_singleton() { return singleton; }
 
 		void set_bake_data(const Ref<FlowAIBakeData>& p_data) { bake_data = p_data; }
 		void set_section_size(uint16_t _value) { section_size = _value; }
 		void set_section_rows(uint16_t _value) { section_rows = _value; }
 		void set_section_cols(uint16_t _value) { section_cols = _value; }
 
-		static FlowAIManager* get_singleton() { return singleton; }
 
 		AStar3D* get_macro_astar() const { return astar_macro; }
 		uint16_t get_section_size() const { return section_size; }
@@ -53,7 +55,6 @@ namespace FlowAI {
 		Ref<ImmediateMesh> imm_grid_mesh;
 		Ref<ImmediateMesh> imm_pathnode_connections_mesh;
 
-		// ALERT: Maybe I should put these draw functions in a debug .cpp file.
 		void _draw_sections_grid(Ref<FlowAIBakeData> bake_data);
 		void _draw_pathnode_connections(std::unordered_map<uint32_t, FlowAIPathnode*> database);
 

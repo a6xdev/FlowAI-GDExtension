@@ -160,6 +160,28 @@ namespace FlowAI {
 
 		UtilityFunctions::print("[FlowAI] Bake complete! Nodes Baked: ", nodes_baked);
 	}
+	
+	void FlowAIManager::connect_pathnodes(FlowAIPathnode* from_node, FlowAIPathnode* to_node) {
+		if (from_node && to_node) {
+			PackedInt32Array link_data = from_node->get_links();
+			if (!link_data.has(to_node->get_id())) {
+				link_data.push_back(to_node->get_id());
+				from_node->set_links(link_data);
+				UtilityFunctions::print("[FlowAI] Pathnodes '", from_node->get_name(), "' and '", to_node->get_name(), " were connected!");
+			}
+		}
+	}
+
+	void FlowAIManager::disconnect_pathnodes(FlowAIPathnode* from_node, FlowAIPathnode* to_node) {
+		if (from_node && to_node) {
+			PackedInt32Array link_data = from_node->get_links();
+			if (link_data.has(to_node->get_id())) {
+				link_data.erase(to_node->get_id());
+				from_node->set_links(link_data);
+				UtilityFunctions::print("[FlowAI] Pathnodes '", from_node->get_name(), "' and '", to_node->get_name(), " were disconnected!");
+			}
+		}
+	}
 
 	// Add a new pathnode in the SceneTree.
 	// Isn't stored in the pathnode_database because we use the SceneTree itself -

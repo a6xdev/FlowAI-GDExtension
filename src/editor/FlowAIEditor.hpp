@@ -5,6 +5,7 @@
 #include <godot_cpp/classes/editor_inspector.hpp>
 #include <godot_cpp/classes/editor_property.hpp>
 #include <godot_cpp/classes/editor_inspector_plugin.hpp>
+#include <godot_cpp/classes/editor_selection.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/editor_plugin.hpp>
 #include <godot_cpp/classes/button.hpp>
@@ -14,6 +15,8 @@
 using namespace godot;
 
 namespace FlowAI {
+	class FlowAIPathnode;
+
 	// Nodes Inspector
 	class FlowAIEditorInspector : public EditorInspectorPlugin {
 		GDCLASS(FlowAIEditorInspector, EditorInspectorPlugin)
@@ -26,11 +29,14 @@ namespace FlowAI {
 	private:
 		Object* target_node = nullptr;
 
+		void _parser_two_pathnodes(FlowAIPathnode* node_a, FlowAIPathnode* node_b);
 		void _parse_manager(Object* target_node);
 		void _parse_pathnode(Object* target_node);
 		void _parse_agent_3d(Object* target_node);
 
 		void signal_manager_bake();
+		void signal_manager_connect_pathnodes();
+		void signal_manager_disconnect_pathnodes();
 		void signal_manager_add_new_pathnode();
 		void signal_pathnode_add_next_pathnode();
 		void signal_pathnode_snap_to_ground();
