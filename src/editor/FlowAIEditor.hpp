@@ -46,9 +46,6 @@ namespace FlowAI {
 	class FlowAIEditorPlugin : public EditorPlugin {
 		GDCLASS(FlowAIEditorPlugin, EditorPlugin)
 	public:
-		String d_visualize_connections = "flow_ai/debug/visualize_connections";
-		String d_visualize_sections_grid = "flow_ai/debug/visualize_sections_grid";
-
 		FlowAIEditorPlugin();
 		~FlowAIEditorPlugin();
 

@@ -1,6 +1,5 @@
 #include "../classes/FlowAIManager.hpp"
 #include "../classes/FlowAIPathnode.hpp"
-#include "../FlowAIDebug.hpp"
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/physics_ray_query_parameters3d.hpp>
@@ -63,46 +62,44 @@ namespace FlowAI {
 	void FlowAIPathnode::_notification(int p_what) {
 		switch (p_what) {
 			case NOTIFICATION_ENTER_TREE: {
-				if (Engine::get_singleton()->is_editor_hint()) {
-					set_process_mode(PROCESS_MODE_ALWAYS);
+				set_process(true);
+
+				if (pathnode_mesh_preview == nullptr) {
+					pathnode_mesh_preview = memnew(MeshInstance3D);
+
+					Ref<BoxMesh> box_mesh;
+					box_mesh.instantiate();
+					box_mesh->set_size(Vector3(0.2f, 0.2f, 0.2f));
+
+					Ref<StandardMaterial3D> material;
+					material.instantiate();
+					material->set_albedo(Color(0.0f, 0.6f, 1.0f, 0.7f)); // blue neon with 70% of opacity
+					material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
+					material->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
+
+					box_mesh->set_material(material);
+					pathnode_mesh_preview->set_mesh(box_mesh);
+
+					add_child(pathnode_mesh_preview);
 				}
 
-				if (FlowAIDebug::pathnode_debug) {
-					if (pathnode_mesh_preview == nullptr) {
-						pathnode_mesh_preview = memnew(MeshInstance3D);
-
-						Ref<BoxMesh> box_mesh;
-						box_mesh.instantiate();
-						box_mesh->set_size(Vector3(0.2f, 0.2f, 0.2f));
-
-						Ref<StandardMaterial3D> material;
-						material.instantiate();
-						material->set_albedo(Color(0.0f, 0.6f, 1.0f, 0.7f)); // blue neon with 70% of opacity
-						material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
-						material->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
-
-						box_mesh->set_material(material);
-						pathnode_mesh_preview->set_mesh(box_mesh);
-
-						add_child(pathnode_mesh_preview);
-					}
-
-					if (pathnode_name_preview == NULL) {
-						pathnode_name_preview = memnew(Label3D);
-						pathnode_name_preview->set_text(get_name());
-						pathnode_name_preview->set_billboard_mode(BaseMaterial3D::BILLBOARD_FIXED_Y);
-						add_child(pathnode_name_preview);
-						Vector3 my_pos = get_global_position();
-						my_pos.y += 1.0;
-						pathnode_name_preview->set_global_position(my_pos);
-					}
+				if (pathnode_name_preview == NULL) {
+					pathnode_name_preview = memnew(Label3D);
+					pathnode_name_preview->set_text(get_name());
+					pathnode_name_preview->set_billboard_mode(BaseMaterial3D::BILLBOARD_FIXED_Y);
+					add_child(pathnode_name_preview);
+					Vector3 my_pos = get_global_position();
+					my_pos.y += 1.0;
+					pathnode_name_preview->set_global_position(my_pos);
 				}
 				break;
 			}
+			case NOTIFICATION_PROCESS:
+				set_pathnode_debug(is_debug_enabled(DEBUG_VISUALIZE_PATHNODE));
 		}
 	}
 
-	// Calls
+	// CALLS
 	void FlowAIPathnode::add_next_pathnode() {
 		auto* parent = get_parent();
 		FlowAIManager* manager = Object::cast_to<FlowAIManager>(parent);
@@ -130,6 +127,19 @@ namespace FlowAI {
 	void FlowAIPathnode::set_path_layers(uint32_t p_layers) {
 		path_layers = p_layers;
 		_update_mesh_preview_colors();
+	}
+
+	void FlowAIPathnode::set_pathnode_debug(bool _bool) {
+		switch (_bool) {
+			case true:
+				pathnode_mesh_preview->show();
+				pathnode_name_preview->show();
+				break;
+			case false:
+				pathnode_mesh_preview->hide();
+				pathnode_name_preview->hide();
+				break;
+		}
 	}
 
 	void FlowAIPathnode::_update_mesh_preview_colors() {

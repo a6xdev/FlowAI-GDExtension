@@ -1,7 +1,7 @@
 #include "../classes/FlowAIAgent3D.hpp"
 #include "../classes/FlowAIManager.hpp"
 #include "../classes/FlowAIPathnode.hpp"
-#include "../FlowAIDebug.hpp"
+
 #include <godot_cpp/classes/engine.hpp>
 
 namespace FlowAI {
@@ -17,7 +17,7 @@ namespace FlowAI {
 
 		ClassDB::bind_method(D_METHOD("is_path_complete"), &FlowAIAgent3D::is_path_complete);
 
-		ClassDB::bind_method(D_METHOD("set_target_pathnode", "target_pathnode", "layers_mask"), &FlowAIAgent3D::set_target_pathnode);
+		ClassDB::bind_method(D_METHOD("set_target_pathnode", "target_pathnode", "layers_mask", "strict_layers"), &FlowAIAgent3D::set_target_pathnode);
 		ClassDB::bind_method(D_METHOD("set_random_path", "strict_layers"), &FlowAIAgent3D::set_random_path);
 		ClassDB::bind_method(D_METHOD("set_path_desired_distance", "_value"), &FlowAIAgent3D::set_path_desired_distance);
 		ClassDB::bind_method(D_METHOD("set_path_layers", "p_layers"), &FlowAIAgent3D::set_path_layers);
@@ -45,13 +45,11 @@ namespace FlowAI {
 	void FlowAIAgent3D::_notification(int p_what) {
 		switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
-			if (FlowAIDebug::draw_agent_path) {
-				path_preview = memnew(MeshInstance3D);
-				immediate_mesh.instantiate();
-				path_preview->set_mesh(immediate_mesh);
-				add_child(path_preview);
-				break;
-			}
+			path_preview = memnew(MeshInstance3D);
+			immediate_mesh.instantiate();
+			path_preview->set_mesh(immediate_mesh);
+			add_child(path_preview);
+			break;
 		case NOTIFICATION_READY:
 			set_physics_process(true);
 			if (!Engine::get_singleton()->is_editor_hint()) {

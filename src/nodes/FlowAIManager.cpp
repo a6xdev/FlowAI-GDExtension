@@ -1,6 +1,5 @@
 #include "../classes/FlowAIManager.hpp"
 #include "../classes/FlowAIPathnode.hpp"
-#include "../FlowAIDebug.hpp"
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
@@ -38,12 +37,15 @@ namespace FlowAI {
 	}
 
 	void FlowAIManager::_notification(int p_what) {
+		if (Engine::get_singleton()->is_editor_hint()) {
+		}
+
 		switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
 			set_process(true);
 			
 			// Section Grid Preview
-			if (grid_preview == NULL && FlowAIDebug::draw_sections_grid == true) {
+			if (grid_preview == NULL) {
 				grid_preview = memnew(MeshInstance3D);
 				imm_grid_mesh.instantiate();
 				grid_preview->set_mesh(imm_grid_mesh);
@@ -51,7 +53,7 @@ namespace FlowAI {
 			}
 
 			// Pathnode Connections Preview
-			if (pathnode_connections_preview == NULL && FlowAIDebug::draw_pathnode_connections_grid == true) {
+			if (pathnode_connections_preview == NULL) {
 				pathnode_connections_preview = memnew(MeshInstance3D);
 				imm_pathnode_connections_mesh.instantiate();
 				pathnode_connections_preview->set_mesh(imm_pathnode_connections_mesh);
@@ -68,13 +70,17 @@ namespace FlowAI {
 			}
 
 			if (!bake_data.is_null()) { 
-				_draw_sections_grid(bake_data);
+				_draw_sections_grid(bake_data); 
 			}
 			break;
 		case NOTIFICATION_PROCESS:
 			if (m_pathnodes_database.size() > 1) {
 				_draw_pathnode_connections(m_pathnodes_database);
 			}
+
+			// Debug
+			set_section_debug(is_debug_enabled(DEBUG_VISUALIZE_SECTION));
+			set_connections_debug(is_debug_enabled(DEBUG_VISUALIZE_CONNECTIONS));
 			break;
 		case NOTIFICATION_EXIT_TREE:
 			break;
@@ -85,7 +91,6 @@ namespace FlowAI {
 	/////////////////////////////////////////////////////////////////////////////
 	// EDITOR
 	/////////////////////////////////////////////////////////////////////////////
-
 	void FlowAIManager::bake_sections() {
 		if (bake_data.is_null()) {
 			UtilityFunctions::print("[FlowAI] ERROR::BAKE_DATA::IS_EMPTY");
@@ -303,7 +308,7 @@ namespace FlowAI {
 			m_sectors_database[coord] = runtime_sector;
 
 			// Debug
-			if (FlowAIDebug::section_debug) {
+			if (is_debug_enabled(DEBUG_VISUALIZE_SECTION)) {
 				Label3D* new_label = memnew(Label3D);
 				new_label->set_text(String::num_int64(runtime_sector.get_id()));
 				new_label->set_billboard_mode(BaseMaterial3D::BillboardMode::BILLBOARD_FIXED_Y);
@@ -317,6 +322,28 @@ namespace FlowAI {
 	///////////////////////////////////////////////////////////////////////////
 	// CALLS
 	/////////////////////////////////////////////////////////////////////////////
+
+	void FlowAIManager::set_section_debug(bool _bool) {
+		switch (_bool) {
+		case true:
+			grid_preview->show();
+			break;
+		case false:
+			grid_preview->hide();
+			break;
+		}
+	}
+
+	void FlowAIManager::set_connections_debug(bool _bool) {
+		switch (_bool) {
+		case true:
+			pathnode_connections_preview->show();
+			break;
+		case false:
+			pathnode_connections_preview->hide();
+			break;
+		}
+	}
 
 	std::unordered_map<unsigned int, FlowAISector> FlowAIManager::get_sectors_list() {
 		std::unordered_map<unsigned int, FlowAISector> list;

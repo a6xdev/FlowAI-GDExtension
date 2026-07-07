@@ -14,6 +14,7 @@
 #include <godot_cpp/classes/immediate_mesh.hpp>
 #include <godot_cpp/classes/a_star3d.hpp>
 #include <godot_cpp/classes/character_body3d.hpp>
+#include <godot_cpp/classes/standard_material3d.hpp>
 #include <vector>
 #include <map>
 #include <unordered_map>
@@ -22,6 +23,23 @@
 using namespace godot;
 
 namespace FlowAI {
+	enum DebugOption {
+		DEBUG_VISUALIZE_PATHNODE,
+		DEBUG_VISUALIZE_SECTION,
+		DEBUG_VISUALIZE_CONNECTIONS,
+		DEBUG_VISUALIZE_AGENT_PATH,
+	};
+
+	inline String get_d_visualize_pathnode_debug() { return "flow_ai/debug/visualize_pathnode_debug"; }
+	inline String get_d_visualize_connections() { return "flow_ai/debug/visualize_connections"; }
+	inline String get_d_visualize_section_debug() { return "flow_ai/debug/visualize_section_debug"; }
+	inline String get_d_visualize_agent_path() { return "flow_ai/debug/visualize_agent_path"; }
+
+	inline Color get_agent_path_line_color() { return Color(1.0f, 0.0f, 0.0f, 0.5f); }
+	inline Color pathnode_connections_color() { return Color(0.157f, 0.157f, 0.769f, 0.8f); }
+	inline Color get_grid_main_color() { return Color(0.0f, 1.0f, 0.5f, 0.4f); }
+	inline Color get_active_sector_color() { return Color(0.0f, 0.5f, 0.5f, 0.4f); }
+
 	struct FlowAISector {
 		FlowAISector() = default;
 		~FlowAISector() = default;
@@ -56,5 +74,6 @@ namespace FlowAI {
 
 	//void HelloWorld(std::string _text = "print") { return; }
 
+	bool is_debug_enabled(DebugOption p_option);
 	Color get_color_from_navigation_layer_mask(uint32_t _layer_mask);
 }

@@ -19,6 +19,7 @@ namespace FlowAI {
 		void set_sector_id(unsigned int _id) { sector_id = _id; };
 		void set_sector_coord(Vector2i _sector) { sector_coord = _sector; };
 		void set_bidirectional(bool _value) { m_bidirectional = _value; };
+		void set_pathnode_debug(bool _bool);
 
 		int32_t get_id() const { return id; };
 		int32_t get_prev_node_id() const { return prev_pathnode_id; };

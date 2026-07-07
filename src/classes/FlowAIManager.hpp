@@ -24,7 +24,8 @@ namespace FlowAI {
 		void set_section_size(uint16_t _value) { section_size = _value; }
 		void set_section_rows(uint16_t _value) { section_rows = _value; }
 		void set_section_cols(uint16_t _value) { section_cols = _value; }
-
+		void set_section_debug(bool _bool);
+		void set_connections_debug(bool _bool);
 
 		AStar3D* get_macro_astar() const { return astar_macro; }
 		uint16_t get_section_size() const { return section_size; }

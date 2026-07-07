@@ -1,6 +1,7 @@
 #include "../classes/FlowAIManager.hpp"
 #include "../classes/FlowAIPathnode.hpp"
-#include "../FlowAIDebug.hpp"
+
+#include <godot_cpp/classes/engine.hpp>
 
 // Draw the beautiful sections grid
 // Also draw a "X" in sections that have pathnodes attached
@@ -52,33 +53,6 @@ namespace FlowAI {
 			imm_grid_mesh->surface_add_vertex(Vector3(max_x, 0.05f, z));
 		}
 
-		// Draw "X" in sections that have pathnodes
-		if (bake_data.is_valid() && FlowAIDebug::draw_x_in_sections_that_have_pathnode) {
-			Dictionary payload = bake_data->get_sectors_payload();
-			for (int r = -half_rows; r < half_rows; ++r) {
-				for (int c = -half_cols; c < half_cols; ++c) {
-					Vector2i coord(c, r);
-					if (payload.has(coord)) {
-						Dictionary sector_dict = payload[coord];
-						Array nodes_in_sector = sector_dict["nodes"];
-						if (!nodes_in_sector.is_empty()) {
-							float x_min = c * section_size;
-							float x_max = x_min + section_size;
-							float z_min = r * section_size;
-							float z_max = z_min + section_size;
-
-							imm_grid_mesh->surface_set_color(FlowAIDebug::active_sector_color);
-
-							imm_grid_mesh->surface_add_vertex(Vector3(x_min, 0.06f, z_min));
-							imm_grid_mesh->surface_add_vertex(Vector3(x_max, 0.06f, z_max));
-
-							imm_grid_mesh->surface_add_vertex(Vector3(x_max, 0.06f, z_min));
-							imm_grid_mesh->surface_add_vertex(Vector3(x_min, 0.06f, z_max));
-						}
-					}
-				}
-			}
-		}
 		imm_grid_mesh->surface_end();
 	}
 
