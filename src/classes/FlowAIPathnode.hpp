@@ -12,6 +12,10 @@ namespace FlowAI {
 		void add_next_pathnode();
 		void snap_to_ground();
 
+		void set_pathnode_name(String _name) { 
+			set_name(_name);
+			pathnode_name_preview->set_text(_name); 
+		}
 		void set_id(int32_t _id) { id = _id; };
 		void set_prev_node_id(int32_t _id) { prev_pathnode_id = _id; };
 		void set_links(PackedInt32Array _links) { links = _links; };

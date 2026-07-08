@@ -63,7 +63,6 @@ namespace FlowAI {
 		switch (p_what) {
 			case NOTIFICATION_ENTER_TREE: {
 				set_process(true);
-
 				if (pathnode_mesh_preview == nullptr) {
 					pathnode_mesh_preview = memnew(MeshInstance3D);
 
@@ -84,16 +83,21 @@ namespace FlowAI {
 				}
 
 				if (pathnode_name_preview == NULL) {
+					// The text is defined on set_pathnode_name()
 					pathnode_name_preview = memnew(Label3D);
-					pathnode_name_preview->set_text(get_name());
 					pathnode_name_preview->set_billboard_mode(BaseMaterial3D::BILLBOARD_FIXED_Y);
 					add_child(pathnode_name_preview);
 					Vector3 my_pos = get_global_position();
 					my_pos.y += 1.0;
 					pathnode_name_preview->set_global_position(my_pos);
+					set_pathnode_name(get_name());
 				}
 				break;
 			}
+
+			case NOTIFICATION_EXIT_TREE:
+				pathnode_mesh_preview->queue_free();
+				pathnode_name_preview->queue_free();
 			case NOTIFICATION_PROCESS:
 				set_pathnode_debug(is_debug_enabled(DEBUG_VISUALIZE_PATHNODE));
 		}

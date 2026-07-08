@@ -69,6 +69,8 @@ namespace FlowAI {
 		if (pathnode_connections_preview->get_surface_override_material_count() > 0)
 			pathnode_connections_preview->set_surface_override_material(0, _connections_mat);
 
+		_sanitize_all_links();
+
 		std::vector<FlowAIPathnode*> all_pathnodes = get_pathnode_list();
 		if (all_pathnodes.size() < 1) return;
 
@@ -76,8 +78,9 @@ namespace FlowAI {
 		imm_pathnode_connections_mesh->surface_begin(Mesh::PRIMITIVE_LINES);
 
 		for (int i = 0; i < all_pathnodes.size(); ++i) {
+			if (!all_pathnodes[i]) return;
+
 			FlowAIPathnode* current_node = all_pathnodes[i];
-			if (!current_node) continue;
 
 			Vector3 start_pos = current_node->get_global_position();
 			start_pos.y += 0.1f;
@@ -90,7 +93,7 @@ namespace FlowAI {
 				FlowAIPathnode* target_node = nullptr;
 				auto it = database.find(target_id);
 				if (it != database.end()) {
-					target_node = it->second;
+					if(it->second) target_node = it->second;
 				}
 
 				Vector3 end_pos = target_node->get_global_position();

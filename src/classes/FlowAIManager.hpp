@@ -56,6 +56,7 @@ namespace FlowAI {
 		Ref<ImmediateMesh> imm_grid_mesh;
 		Ref<ImmediateMesh> imm_pathnode_connections_mesh;
 
+		void _sanitize_all_links();
 		void _draw_sections_grid(Ref<FlowAIBakeData> bake_data);
 		void _draw_pathnode_connections(std::unordered_map<uint32_t, FlowAIPathnode*> database);
 

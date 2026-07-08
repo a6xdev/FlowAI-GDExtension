@@ -1,6 +1,7 @@
 #include "../classes/FlowAIManager.hpp"
 #include "../classes/FlowAIPathnode.hpp"
 
+#include <unordered_set>
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/editor_interface.hpp>
 #include <godot_cpp/classes/resource_saver.hpp>
@@ -204,7 +205,7 @@ namespace FlowAI {
 		StringName unique_name = StringName(gd_str_unique_name);
 
 		new_pathnode->set_id(unique_id);
-		new_pathnode->set_name(unique_name);
+		new_pathnode->set_pathnode_name(unique_name);
 
 		// If prev_pathnode_id is != -1, mean that the user is creating a new pathnode based on a selected pathnode.
 		if (prev_pathnode_id != -1) {
@@ -469,6 +470,25 @@ namespace FlowAI {
 				continue;
 			}
 			return counter_id;
+		}
+	}
+
+	void FlowAIManager::_sanitize_all_links() {
+		std::vector<FlowAIPathnode*> pathnodes_list = get_pathnode_list();
+
+		std::unordered_set<uint32_t> valid_ids;
+		for (auto pathnode : pathnodes_list) {
+			valid_ids.insert(pathnode->get_id());
+		}
+
+		for (auto pathnode : pathnodes_list) {
+			PackedInt32Array  valid_links;
+			for (auto link_id : pathnode->get_links()) {
+				if (valid_ids.count(link_id) > 0) {
+					valid_links.append(link_id);
+				}
+			}
+			pathnode->set_links(valid_links);
 		}
 	}
 }
