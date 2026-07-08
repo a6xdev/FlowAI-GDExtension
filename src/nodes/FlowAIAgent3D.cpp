@@ -150,8 +150,10 @@ namespace FlowAI {
 			}
 
 			// Check if start_sector and end_sector dain't the same sector.
-			UtilityFunctions::print("Start Sector: ", start_sector->get_id());
-			UtilityFunctions::print("End Sector: ", end_sector->get_id());
+			if (is_debug_enabled(DEBUG_ENABLE_LOGGING)) {
+				UtilityFunctions::print("[FlowAI] Start Sector: ", start_sector->get_id());
+				UtilityFunctions::print("[FlowAI] End Sector: ", end_sector->get_id());
+			}
 
 			if (start_sector->get_id() != end_sector->get_id()) {
 				current_sectors_path = astar_macro->get_point_path(start_sector->get_id(), end_sector->get_id());
@@ -170,8 +172,10 @@ namespace FlowAI {
 		path_result = generate_pathnode_path(_pos, start_sector, end_sector, _layer_mask, strict_layers);
 		draw_agent_pathnode_path(current_pathnodes_path);
 
-		UtilityFunctions::print("current_sectors_path.size(): ", current_sectors_path.size());
-		UtilityFunctions::print("current_pathnodes_path.size(): ", current_pathnodes_path.size());
+		if (is_debug_enabled(DEBUG_ENABLE_LOGGING)) {
+			UtilityFunctions::print("[FlowAI] current_sectors_path.size(): ", current_sectors_path.size());
+			UtilityFunctions::print("[FlowAI] current_pathnodes_path.size(): ", current_pathnodes_path.size());
+		}
 
 		return path_result;
 	}
@@ -220,7 +224,7 @@ namespace FlowAI {
 			path_complete = true;
 			current_pathnodes_path.clear();
 			current_path_index = 0;
-			UtilityFunctions::print("[FlowAIAgent3D] Path completed.");
+			if (is_debug_enabled(DEBUG_ENABLE_LOGGING)) UtilityFunctions::print("[FlowAIAgent3D] Path completed.");
 		}
 	}
 

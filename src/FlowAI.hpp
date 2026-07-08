@@ -24,12 +24,14 @@ using namespace godot;
 
 namespace FlowAI {
 	enum DebugOption {
+		DEBUG_ENABLE_LOGGING,
 		DEBUG_VISUALIZE_PATHNODE,
 		DEBUG_VISUALIZE_SECTION,
 		DEBUG_VISUALIZE_CONNECTIONS,
 		DEBUG_VISUALIZE_AGENT_PATH,
 	};
 
+	inline String get_d_enable_logging() { return "flow_ai/debug/enable_logging"; }
 	inline String get_d_visualize_pathnode_debug() { return "flow_ai/debug/visualize_pathnode_debug"; }
 	inline String get_d_visualize_connections() { return "flow_ai/debug/visualize_connections"; }
 	inline String get_d_visualize_section_debug() { return "flow_ai/debug/visualize_section_debug"; }

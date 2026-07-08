@@ -26,27 +26,32 @@ namespace FlowAI {
         ProjectSettings* settings = ProjectSettings::get_singleton();
         if (!settings) return;
 
+        String d_enable_logging = get_d_enable_logging();
         String d_visualize_pathnode_debug = get_d_visualize_pathnode_debug();
         String d_visualize_section_debug = get_d_visualize_section_debug();
         String d_visualize_connections = get_d_visualize_connections();
         String d_visualize_agent_path = get_d_visualize_agent_path();
 
         // Visualize Options
+        if (!settings->has_setting(d_enable_logging)) { settings->set_setting(d_enable_logging, true); }
         if (!settings->has_setting(d_visualize_pathnode_debug)) { settings->set_setting(d_visualize_pathnode_debug, true); }
         if (!settings->has_setting(d_visualize_section_debug)) { settings->set_setting(d_visualize_section_debug, true); }
         if (!settings->has_setting(d_visualize_connections)) { settings->set_setting(d_visualize_connections, true); }
         if (!settings->has_setting(d_visualize_agent_path)) { settings->set_setting(d_visualize_agent_path, true); }
 
+        settings->set_initial_value(d_enable_logging, false);
         settings->set_initial_value(d_visualize_pathnode_debug, true);
         settings->set_initial_value(d_visualize_section_debug, true);
         settings->set_initial_value(d_visualize_connections, true);
         settings->set_initial_value(d_visualize_agent_path, true);
 
+        PropertyInfo debug_info_enable_logging(Variant::BOOL, d_enable_logging);
         PropertyInfo debug_info_visualize_pathnode_debug(Variant::BOOL, d_visualize_pathnode_debug);
         PropertyInfo debug_info_visualize_sections_debug(Variant::BOOL, d_visualize_section_debug);
         PropertyInfo debug_info_visualize_connections(Variant::BOOL, d_visualize_connections);
         PropertyInfo debug_info_visualize_agent_path(Variant::BOOL, d_visualize_agent_path);
 
+        settings->add_property_info(debug_info_enable_logging);
         settings->add_property_info(debug_info_visualize_pathnode_debug);
         settings->add_property_info(debug_info_visualize_sections_debug);
         settings->add_property_info(debug_info_visualize_connections);
@@ -83,6 +88,7 @@ namespace FlowAI {
         String target_path = "";
 
         switch (p_option) {
+        case DEBUG_ENABLE_LOGGING: target_path = get_d_enable_logging(); break;
         case DEBUG_VISUALIZE_PATHNODE: target_path = get_d_visualize_pathnode_debug(); break;
         case DEBUG_VISUALIZE_SECTION: target_path = get_d_visualize_section_debug(); break;
         case DEBUG_VISUALIZE_AGENT_PATH: target_path = get_d_visualize_agent_path(); break;
