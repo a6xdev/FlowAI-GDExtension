@@ -15,6 +15,7 @@ namespace FlowAI {
         ClassDB::bind_method(D_METHOD("signal_manager_connect_pathnodes"), &FlowAIEditorInspector::signal_manager_connect_pathnodes);
         ClassDB::bind_method(D_METHOD("signal_manager_disconnect_pathnodes"), &FlowAIEditorInspector::signal_manager_disconnect_pathnodes);
         ClassDB::bind_method(D_METHOD("signal_manager_add_new_pathnode"), &FlowAIEditorInspector::signal_manager_add_new_pathnode);
+        ClassDB::bind_method(D_METHOD("signal_manager_snap_all_pathnodes_to_ground"), &FlowAIEditorInspector::signal_manager_snap_all_pathnodes_to_ground);
         ClassDB::bind_method(D_METHOD("signal_pathnode_add_next_pathnode"), &FlowAIEditorInspector::signal_pathnode_add_next_pathnode);
         ClassDB::bind_method(D_METHOD("signal_pathnode_snap_to_ground"), &FlowAIEditorInspector::signal_pathnode_snap_to_ground);
     }
@@ -91,15 +92,19 @@ namespace FlowAI {
 
         Button* btn_bake = memnew(Button);
         Button* btn_add_new_pathnode = memnew(Button);
+        Button* btn_snap_all_pathnodes_to_ground = memnew(Button);
 
         btn_bake->set_text("Bake");
         btn_add_new_pathnode->set_text("Add New Pathnode");
+        btn_snap_all_pathnodes_to_ground->set_text("Snap All Pathnodes to Ground");
 
         btn_bake->connect("pressed", Callable(this, "signal_manager_bake"));
         btn_add_new_pathnode->connect("pressed", Callable(this, "signal_manager_add_new_pathnode"));
+        btn_snap_all_pathnodes_to_ground->connect("pressed", Callable(this, "signal_manager_snap_all_pathnodes_to_ground"));
 
         add_custom_control(btn_bake);
         add_custom_control(btn_add_new_pathnode);
+        add_custom_control(btn_snap_all_pathnodes_to_ground);
     }
 
     // ----------------------- //
@@ -127,7 +132,7 @@ namespace FlowAI {
 
         lbl_id->set_text("Pathnode ID: " + String::num_int64(target_pathnode->get_id()));
         lbl_prev_node_id->set_text("Previous Pathnode ID: " + prev_node_id_text);
-        lbl_section_id->set_text("Section ID: " + target_pathnode->get_sector_id());
+        lbl_section_id->set_text("Section ID: " + String::num_int64(target_pathnode->get_sector_id()));
         lbl_section_coord->set_text("Section Coord: " + target_pathnode->get_sector_coord());
         lbl_links_title->set_text("Links: [Array] - " + String::num_int64(target_pathnode->get_links().size()));
         btn_add->set_text("Add Next Pathnode");
@@ -186,6 +191,15 @@ namespace FlowAI {
     void FlowAIEditorInspector::signal_manager_add_new_pathnode() {
         if (FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_node)) {
             manager->add_new_pathnode();
+        }
+    }
+
+    void FlowAIEditorInspector::signal_manager_snap_all_pathnodes_to_ground() {
+        if (FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_node)) {
+            std::vector<FlowAIPathnode*> all_pathnodes = manager->get_pathnode_list();
+            for (auto child : all_pathnodes) {
+                child->snap_to_ground();
+            }
         }
     }
 

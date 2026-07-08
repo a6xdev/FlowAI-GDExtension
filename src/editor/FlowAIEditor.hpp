@@ -38,6 +38,7 @@ namespace FlowAI {
 		void signal_manager_connect_pathnodes();
 		void signal_manager_disconnect_pathnodes();
 		void signal_manager_add_new_pathnode();
+		void signal_manager_snap_all_pathnodes_to_ground();
 		void signal_pathnode_add_next_pathnode();
 		void signal_pathnode_snap_to_ground();
 	};
