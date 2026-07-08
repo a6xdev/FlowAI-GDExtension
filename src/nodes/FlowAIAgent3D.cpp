@@ -29,16 +29,24 @@ namespace FlowAI {
 		ClassDB::bind_method(D_METHOD("get_path_layers"), &FlowAIAgent3D::get_path_layers);
 
 		ClassDB::add_property(
-			"FlowAIAgent3D",
-			PropertyInfo(
+			"FlowAIAgent3D", PropertyInfo(
 				Variant::INT,
 				"path_layers",
 				PROPERTY_HINT_LAYERS_3D_NAVIGATION,
 				"",
 				PROPERTY_USAGE_DEFAULT
 			),
-			"set_path_layers",
-			"get_path_layers"
+			"set_path_layers", "get_path_layers"
+		);
+
+		ClassDB::add_property("FlowAIAgent3D", PropertyInfo(
+			Variant::FLOAT, 
+			"path_desired_distance", 
+			PROPERTY_HINT_NONE, 
+			"", 
+			PROPERTY_USAGE_DEFAULT
+		), 
+			"set_path_desired_distance", "get_path_desired_distance"
 		);
 	}
 
@@ -64,6 +72,7 @@ namespace FlowAI {
 			break;
 		case NOTIFICATION_PHYSICS_PROCESS:
 			if (!current_pathnodes_path.is_empty() && actor_owner) {
+				Vector3 true_actor_pos = actor_owner->get_global_position();
 				float dist = actor_owner->get_global_position().distance_to(current_pathnodes_path[current_path_index]);
 				if (dist < path_desired_distance) {
 					set_next_path_index();
