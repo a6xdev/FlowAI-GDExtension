@@ -20,10 +20,11 @@ namespace FlowAI {
 		ClassDB::bind_method(D_METHOD("set_prev_node_id"), &FlowAIPathnode::set_prev_node_id);
 		ClassDB::bind_method(D_METHOD("set_links"), &FlowAIPathnode::set_links);
 		ClassDB::bind_method(D_METHOD("set_path_layers", "p_layers"), &FlowAIPathnode::set_path_layers);
-		ClassDB::bind_method(D_METHOD("set_sector_id", "p_layers"), &FlowAIPathnode::set_sector_id);
-		ClassDB::bind_method(D_METHOD("set_sector_coord", "p_layers"), &FlowAIPathnode::set_sector_coord);
-		ClassDB::bind_method(D_METHOD("set_bidirectional", "p_layers"), &FlowAIPathnode::set_bidirectional);
-		ClassDB::bind_method(D_METHOD("set_weight_scale", "p_layers"), &FlowAIPathnode::set_weight_scale);
+		ClassDB::bind_method(D_METHOD("set_sector_id", "_value"), &FlowAIPathnode::set_sector_id);
+		ClassDB::bind_method(D_METHOD("set_sector_coord", "_value"), &FlowAIPathnode::set_sector_coord);
+		ClassDB::bind_method(D_METHOD("set_disabled", "_value"), &FlowAIPathnode::set_disabled);
+		ClassDB::bind_method(D_METHOD("set_bidirectional", "_value"), &FlowAIPathnode::set_bidirectional);
+		ClassDB::bind_method(D_METHOD("set_weight_scale", "_value"), &FlowAIPathnode::set_weight_scale);
 
 		ClassDB::bind_method(D_METHOD("get_id"), &FlowAIPathnode::get_id);
 		ClassDB::bind_method(D_METHOD("get_prev_node_id"), &FlowAIPathnode::get_prev_node_id);
@@ -31,6 +32,7 @@ namespace FlowAI {
 		ClassDB::bind_method(D_METHOD("get_path_layers"), &FlowAIPathnode::get_path_layers);
 		ClassDB::bind_method(D_METHOD("get_sector_id"), &FlowAIPathnode::get_sector_id);
 		ClassDB::bind_method(D_METHOD("get_sector_coord"), &FlowAIPathnode::get_sector_coord);
+		ClassDB::bind_method(D_METHOD("is_disabled"), &FlowAIPathnode::is_disabled);
 		ClassDB::bind_method(D_METHOD("is_bidirectional"), &FlowAIPathnode::is_bidirectional);
 		ClassDB::bind_method(D_METHOD("get_weight_scale"), &FlowAIPathnode::get_weight_scale);
 
@@ -44,6 +46,7 @@ namespace FlowAI {
 
 		String settings_prefix = "flow_ai/navigation_3d";
 
+		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::BOOL, "Pathnode Disabled"), "set_disabled", "is_disabled");
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::BOOL, "Bi-Directional"), "set_bidirectional", "is_bidirectional");
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::FLOAT, "Weight Scale"), "set_weight_scale", "get_weight_scale");
 		ClassDB::add_property(
@@ -154,9 +157,11 @@ namespace FlowAI {
 
 		Ref<Mesh> mesh = pathnode_mesh_preview->get_mesh();
 		if (mesh.is_null()) return;
-
 		Ref<StandardMaterial3D> mat = mesh->surface_get_material(0);
 		if (mat.is_null()) return;
+
+		// If pathnode is disabled, set the red color
+		if (is_disabled()) { mat->set_albedo(Color(1.0f, 0.0f, 0.0f)); }
 
 		ProjectSettings* settings = ProjectSettings::get_singleton();
 		if (!settings) return;

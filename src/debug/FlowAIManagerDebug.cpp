@@ -78,15 +78,11 @@ namespace FlowAI {
 		imm_pathnode_connections_mesh->surface_begin(Mesh::PRIMITIVE_LINES);
 
 		for (int i = 0; i < all_pathnodes.size(); ++i) {
-			if (!all_pathnodes[i]) return;
-
 			FlowAIPathnode* current_node = all_pathnodes[i];
-
 			Vector3 start_pos = current_node->get_global_position();
 			start_pos.y += 0.1f;
 
 			PackedInt32Array linked_ids = current_node->get_links();
-
 			for (int j = 0; j < linked_ids.size(); ++j) {
 				uint32_t target_id = linked_ids[j];
 
@@ -99,10 +95,14 @@ namespace FlowAI {
 				Vector3 end_pos = target_node->get_global_position();
 				end_pos.y += 0.1f;
 
-				if (target_node) {
-					imm_pathnode_connections_mesh->surface_set_color(get_color_from_navigation_layer_mask(current_node->get_path_layers()));
+				if (current_node && target_node) {
+					bool connection_disabled = current_node->is_disabled() || target_node->is_disabled();
+					Color current_node_color = connection_disabled ? Color(0.6f, 0.078f, 0.078f) : get_color_from_navigation_layer_mask(current_node->get_path_layers());
+					Color target_node_color = connection_disabled ? Color(0.6f, 0.078f, 0.078f) : get_color_from_navigation_layer_mask(target_node->get_path_layers());
+
+					imm_pathnode_connections_mesh->surface_set_color(current_node_color);
 					imm_pathnode_connections_mesh->surface_add_vertex(start_pos);
-					imm_pathnode_connections_mesh->surface_set_color(get_color_from_navigation_layer_mask(target_node->get_path_layers()));
+					imm_pathnode_connections_mesh->surface_set_color(target_node_color);
 					imm_pathnode_connections_mesh->surface_add_vertex(end_pos);
 				}
 			}

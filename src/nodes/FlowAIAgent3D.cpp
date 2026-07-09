@@ -280,6 +280,7 @@ namespace FlowAI {
 				bool layer_compatible = (ref->get_path_layers() & _layers) > 0;
 				if (ref && (ignore_layers || layer_compatible)) {
 					astar_micro->add_point(pathnode_id, ref->get_global_position(), ref->get_weight_scale());
+					astar_micro->set_point_disabled(pathnode_id, ref->is_disabled());
 				}
 			}
 		}

@@ -358,6 +358,7 @@ namespace FlowAI {
 	}
 
 	// Works in editor and runtime
+	// Dont get pathnodes that are disabled
 	std::vector<FlowAIPathnode*> FlowAIManager::get_pathnode_list_by_layer(uint32_t _layer) {
 		// Maybe populate m_pathnodes_database here too?
 		TypedArray<Node> my_children = get_children();
@@ -365,7 +366,7 @@ namespace FlowAI {
 
 		for (int i = 0; i < my_children.size(); i++) {
 			FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(my_children[i]);
-			if (pathnode && pathnode->get_path_layers() == _layer) {
+			if (pathnode && !pathnode->is_disabled() && pathnode->get_path_layers() == _layer) {
 				arr_pathnode_list.push_back(pathnode);
 			}
 		}
@@ -373,6 +374,7 @@ namespace FlowAI {
 	}
 
 	// Works in editor and runtime
+	// Dont get pathnodes that are disabled
 	std::vector<FlowAIPathnode*> FlowAIManager::get_pathnode_list() {
 		TypedArray<Node> my_children = get_children();
 		std::vector<FlowAIPathnode*> arr_pathnode_list;
