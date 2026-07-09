@@ -22,8 +22,10 @@ namespace FlowAI {
 		void set_path_layers(uint32_t p_layers); // Needs update preview mesh color in cpp.
 		void set_sector_id(unsigned int _id) { sector_id = _id; };
 		void set_sector_coord(Vector2i _sector) { sector_coord = _sector; };
-		void set_bidirectional(bool _value) { m_bidirectional = _value; };
 		void set_pathnode_debug(bool _bool);
+
+		void set_bidirectional(bool _value) { bidirectional = _value; };
+		void set_weight_scale(float _value) { weight_scale = _value; };
 
 		int32_t get_id() const { return id; };
 		int32_t get_prev_node_id() const { return prev_pathnode_id; };
@@ -31,7 +33,8 @@ namespace FlowAI {
 		uint32_t get_path_layers() const { return path_layers; }
 		unsigned int get_sector_id() const { return sector_id; }
 		Vector2i get_sector_coord() const { return sector_coord; };
-		bool is_bidirectional() const { return m_bidirectional; };
+		bool is_bidirectional() const { return bidirectional; };
+		float get_weight_scale() const { return weight_scale; };
 	protected:
 		static void _bind_methods();
 		void _notification(int p_what);
@@ -42,7 +45,9 @@ namespace FlowAI {
 		unsigned int sector_id = 0;
 		Vector2i sector_coord = Vector2i(0.0, 0.0);
 		PackedInt32Array links;
-		bool m_bidirectional = true;
+
+		bool bidirectional = true;
+		float weight_scale = 1.0;
 
 		MeshInstance3D* pathnode_mesh_preview = nullptr;
 		Label3D* pathnode_name_preview = nullptr;

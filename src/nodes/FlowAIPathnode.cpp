@@ -23,6 +23,7 @@ namespace FlowAI {
 		ClassDB::bind_method(D_METHOD("set_sector_id", "p_layers"), &FlowAIPathnode::set_sector_id);
 		ClassDB::bind_method(D_METHOD("set_sector_coord", "p_layers"), &FlowAIPathnode::set_sector_coord);
 		ClassDB::bind_method(D_METHOD("set_bidirectional", "p_layers"), &FlowAIPathnode::set_bidirectional);
+		ClassDB::bind_method(D_METHOD("set_weight_scale", "p_layers"), &FlowAIPathnode::set_weight_scale);
 
 		ClassDB::bind_method(D_METHOD("get_id"), &FlowAIPathnode::get_id);
 		ClassDB::bind_method(D_METHOD("get_prev_node_id"), &FlowAIPathnode::get_prev_node_id);
@@ -31,6 +32,7 @@ namespace FlowAI {
 		ClassDB::bind_method(D_METHOD("get_sector_id"), &FlowAIPathnode::get_sector_id);
 		ClassDB::bind_method(D_METHOD("get_sector_coord"), &FlowAIPathnode::get_sector_coord);
 		ClassDB::bind_method(D_METHOD("is_bidirectional"), &FlowAIPathnode::is_bidirectional);
+		ClassDB::bind_method(D_METHOD("get_weight_scale"), &FlowAIPathnode::get_weight_scale);
 
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::INT, "id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_id", "get_id");
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::INT, "prev_pathnode_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_prev_node_id", "get_prev_node_id");
@@ -42,7 +44,8 @@ namespace FlowAI {
 
 		String settings_prefix = "flow_ai/navigation_3d";
 
-		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::BOOL, "bidirectional"), "set_bidirectional", "is_bidirectional");
+		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::BOOL, "Bi-Directional"), "set_bidirectional", "is_bidirectional");
+		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::FLOAT, "Weight Scale"), "set_weight_scale", "get_weight_scale");
 		ClassDB::add_property(
 			"FlowAIPathnode",
 			PropertyInfo(
