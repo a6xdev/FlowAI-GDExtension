@@ -366,7 +366,7 @@ namespace FlowAI {
 
 		for (int i = 0; i < my_children.size(); i++) {
 			FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(my_children[i]);
-			if (pathnode && !pathnode->is_disabled() && pathnode->get_path_layers() == _layer) {
+			if (pathnode && !pathnode->is_disabled() && (pathnode->get_path_layers() & _layer) > 0) {
 				arr_pathnode_list.push_back(pathnode);
 			}
 		}
