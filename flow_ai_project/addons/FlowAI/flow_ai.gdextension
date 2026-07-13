@@ -1,0 +1,17 @@
+[configuration]
+
+entry_symbol = "flow_ai_library_init"
+compatibility_minimum  = "4.6"
+reloadable = true
+
+[libraries]
+windows.debug.x86_64 = "res://addons/FlowAI/bin/flow_ai.windows.template_debug.x86_64.dll"
+windows.release.x86_64 = "res://addons/FlowAI/bin/flow_ai.windows.template_release.x86_64.dll"
+
+# linux.debug.x86_64 = "res://addons/FlowAI/bin/libflow_ai.linux.template_debug.x86_64.so"
+# macos.debug.x86_64 = "res://addons/FlowAI/bin/libflow_ai.macos.template_debug.x86_64.framework"
+
+[icons]
+FlowAIManager = "assets/icons/manager_icon.svg"
+FlowAIAgent3D = "assets/icons/agent_icon.svg"
+FlowAIPathnode = "assets/icons/pathnode_icon.svg"

@@ -1,0 +1,59 @@
+[gd_scene format=3 uid="uid://b5un4tbupudgy"]
+
+[ext_resource type="Texture2D" uid="uid://bfohm4cyn2nnj" path="res://assets/textures/texture_08.png" id="1_okf0i"]
+[ext_resource type="Script" uid="uid://c422wob228hdr" path="res://scripts/core/fly_camera.gd" id="1_pa2i8"]
+[ext_resource type="PackedScene" uid="uid://cindd01yuqmwl" path="res://scene/prefabs/actor_npc.tscn" id="2_b0kse"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_s1lmg"]
+albedo_texture = ExtResource("1_okf0i")
+uv1_scale = Vector3(0.165, 0.165, 0.165)
+uv1_triplanar = true
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_wh0qo"]
+
+[sub_resource type="Sky" id="Sky_fqlbv"]
+sky_material = SubResource("ProceduralSkyMaterial_wh0qo")
+
+[sub_resource type="Environment" id="Environment_s1lmg"]
+background_mode = 2
+sky = SubResource("Sky_fqlbv")
+
+[node name="TestScene" type="Node3D" unique_id=269448292]
+
+[node name="actor" type="Node" parent="." unique_id=1367747560]
+
+[node name="FlyCamera" type="Camera3D" parent="actor" unique_id=2047288686]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.1625175, 10.053596)
+script = ExtResource("1_pa2i8")
+active = true
+
+[node name="CanvasLayer" type="CanvasLayer" parent="actor/FlyCamera" unique_id=635026885]
+
+[node name="fps_counter" type="Label" parent="actor/FlyCamera/CanvasLayer" unique_id=970182124]
+offset_left = 10.0
+offset_top = 9.0
+offset_right = 50.0
+offset_bottom = 32.0
+text = "FPS: "
+
+[node name="actor_npc" parent="actor" unique_id=1067800568 instance=ExtResource("2_b0kse")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5712745, 0)
+
+[node name="map" type="Node" parent="." unique_id=1432236408]
+
+[node name="FlowAIManager" type="FlowAIManager" parent="map" unique_id=1706856783]
+
+[node name="pathnode_1" type="FlowAIPathnode" parent="map/FlowAIManager" unique_id=217952078]
+id = 1
+
+[node name="plane" type="CSGBox3D" parent="map" unique_id=502000103]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.9287256, 0)
+use_collision = true
+size = Vector3(200, 1, 200)
+material = SubResource("StandardMaterial3D_s1lmg")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="." unique_id=743175712]
+transform = Transform3D(1, 0, 0, 0, 0.6493533, 0.76048684, 0, -0.76048684, 0.6493533, 0, 0, 0)
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="." unique_id=176257010]
+environment = SubResource("Environment_s1lmg")

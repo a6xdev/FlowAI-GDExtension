@@ -1,0 +1,27 @@
+[gd_scene format=3 uid="uid://cindd01yuqmwl"]
+
+[ext_resource type="Script" uid="uid://ot3b10fxc430" path="res://scripts/gameplay/actor_npc.gd" id="1_kueln"]
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_s1lmg"]
+
+[sub_resource type="CapsuleShape3D" id="CapsuleShape3D_s1lmg"]
+
+[node name="actor_npc" type="CharacterBody3D" unique_id=1067800568]
+collision_layer = 2
+script = ExtResource("1_kueln")
+
+[node name="mesh" type="MeshInstance3D" parent="." unique_id=84618751]
+mesh = SubResource("CapsuleMesh_s1lmg")
+
+[node name="collision" type="CollisionShape3D" parent="." unique_id=112225284]
+shape = SubResource("CapsuleShape3D_s1lmg")
+
+[node name="FlowAIAgent3D" type="FlowAIAgent3D" parent="." unique_id=786628019]
+path_layers = 3
+path_desired_distance = 1.5
+
+[node name="npc_name" type="Label3D" parent="." unique_id=631431480]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5326074, 0)
+visible = false
+pixel_size = 0.045
+billboard = 1

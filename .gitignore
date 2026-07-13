@@ -1,7 +1,10 @@
 godot-cpp/
-flow_ai_project/
+bin/
 .vs/
 
 # Specific Files
 *.sconsign.dblite
 *.obj
+*.import
+*.tmp
+*.uid
