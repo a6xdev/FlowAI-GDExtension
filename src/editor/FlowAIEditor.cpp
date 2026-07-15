@@ -33,17 +33,30 @@ namespace FlowAI {
         String d_visualize_agent_path = get_d_visualize_agent_path();
 
         // Visualize Options
-        if (!settings->has_setting(d_enable_logging)) { settings->set_setting(d_enable_logging, true); }
-        if (!settings->has_setting(d_visualize_pathnode_debug)) { settings->set_setting(d_visualize_pathnode_debug, true); }
-        if (!settings->has_setting(d_visualize_section_debug)) { settings->set_setting(d_visualize_section_debug, true); }
-        if (!settings->has_setting(d_visualize_connections)) { settings->set_setting(d_visualize_connections, true); }
-        if (!settings->has_setting(d_visualize_agent_path)) { settings->set_setting(d_visualize_agent_path, true); }
+        if (!settings->has_setting(d_enable_logging)) { 
+            settings->set_setting(d_enable_logging, true);
+            settings->set_initial_value(d_enable_logging, true);
+        }
 
-        settings->set_initial_value(d_enable_logging, false);
-        settings->set_initial_value(d_visualize_pathnode_debug, true);
-        settings->set_initial_value(d_visualize_section_debug, true);
-        settings->set_initial_value(d_visualize_connections, true);
-        settings->set_initial_value(d_visualize_agent_path, true);
+        if (!settings->has_setting(d_visualize_pathnode_debug)) {
+            settings->set_setting(d_visualize_pathnode_debug, true);
+            settings->set_initial_value(d_visualize_pathnode_debug, true);
+        }
+
+        if (!settings->has_setting(d_visualize_section_debug)) {
+            settings->set_setting(d_visualize_section_debug, true);
+            settings->set_initial_value(d_visualize_section_debug, true);
+        }
+
+        if (!settings->has_setting(d_visualize_connections)) {
+            settings->set_setting(d_visualize_connections, true);
+            settings->set_initial_value(d_visualize_connections, true);
+        }
+
+        if (!settings->has_setting(d_visualize_agent_path)) {
+            settings->set_setting(d_visualize_agent_path, true);
+            settings->set_initial_value(d_visualize_agent_path, true);
+        }
 
         PropertyInfo debug_info_enable_logging(Variant::BOOL, d_enable_logging);
         PropertyInfo debug_info_visualize_pathnode_debug(Variant::BOOL, d_visualize_pathnode_debug);

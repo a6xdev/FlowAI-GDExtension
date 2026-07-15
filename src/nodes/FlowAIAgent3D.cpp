@@ -88,7 +88,10 @@ namespace FlowAI {
 
 	FlowAIPathResult FlowAIAgent3D::set_target_pathnode(FlowAIPathnode* target_pathnode, uint32_t layers_mask, bool strict_layers) {
 		path_complete = false;
-		return request_path(target_pathnode->get_global_position(), layers_mask, strict_layers);
+		if (target_pathnode) {
+			return request_path(target_pathnode->get_global_position(), layers_mask, strict_layers);
+		}
+		return PATH_NOT_FOUND;
 	}
 
 	FlowAIPathResult FlowAIAgent3D::set_random_path(bool strict_layers) {
