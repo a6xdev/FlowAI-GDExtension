@@ -59,7 +59,10 @@ namespace FlowAI {
 			add_child(path_preview);
 			break;
 		case NOTIFICATION_READY:
+			if (!FlowAIManager::get_singleton()) return;
+
 			set_physics_process(true);
+			// Check if is in runtime and the FlowAIManager exists on SceneTree.
 			if (!Engine::get_singleton()->is_editor_hint()) {
 				actor_owner = Object::cast_to<CharacterBody3D>(get_parent());
 				astar_macro = FlowAIManager::get_singleton()->get_macro_astar();
@@ -71,6 +74,8 @@ namespace FlowAI {
 			}
 			break;
 		case NOTIFICATION_PHYSICS_PROCESS:
+			if (!FlowAIManager::get_singleton()) return;
+
 			if (!current_pathnodes_path.is_empty() && actor_owner) {
 				Vector3 true_actor_pos = actor_owner->get_global_position();
 				float dist = actor_owner->get_global_position().distance_to(current_pathnodes_path[current_path_index]);
@@ -87,6 +92,8 @@ namespace FlowAI {
 	/////////////////////////////////////////////////////////////////////////////
 
 	FlowAIPathResult FlowAIAgent3D::set_target_pathnode(FlowAIPathnode* target_pathnode, uint32_t layers_mask, bool strict_layers) {
+		if (!FlowAIManager::get_singleton()) return PATH_NOT_FOUND;
+
 		path_complete = false;
 		if (target_pathnode) {
 			return request_path(target_pathnode->get_global_position(), layers_mask, strict_layers);
@@ -95,6 +102,8 @@ namespace FlowAI {
 	}
 
 	FlowAIPathResult FlowAIAgent3D::set_random_path(bool strict_layers) {
+		if (!FlowAIManager::get_singleton()) return PATH_NOT_FOUND;
+
 		std::vector<FlowAIPathnode*> pathnode_list = FlowAIManager::get_singleton()->get_pathnode_list_by_layer(get_path_layers());
 		int random_pathnode_index = UtilityFunctions::randi_range(0, (int)pathnode_list.size() - 1);
 		FlowAIPathnode* random_pathnode = pathnode_list[random_pathnode_index];
@@ -109,6 +118,8 @@ namespace FlowAI {
 	}
 
 	Vector3 FlowAIAgent3D::get_next_pathnode_position() {
+		if (!FlowAIManager::get_singleton()) return Vector3(0.0f, 0.0f, 0.0f);
+
 		bool is_actor_valid = actor_owner && godot::ObjectDB::get_instance(actor_owner->get_instance_id()) && actor_owner->is_inside_tree();
 
 		if (path_complete || current_pathnodes_path.is_empty()) {
@@ -125,9 +136,11 @@ namespace FlowAI {
 		return Vector3(0.0, 0.0, 0.0);
 	}
 
-	FlowAIManager* FlowAIAgent3D::get_current_manager() const { return FlowAIManager::get_singleton(); }
+	FlowAIManager* FlowAIAgent3D::get_current_manager() const { return (FlowAIManager::get_singleton()) ? FlowAIManager::get_singleton() : nullptr; }
 
 	FlowAIPathnode* FlowAIAgent3D::get_pathnode_closest_to_pos(const Vector3 _pos) const {
+		if (!FlowAIManager::get_singleton()) return nullptr;
+
 		FlowAIPathnode* closest_pathnode = nullptr;
 		double min_dist = INFINITY;
 		for (const auto pathnode : FlowAIManager::get_singleton()->get_pathnode_list()) {
