@@ -9,6 +9,8 @@ namespace FlowAI {
     void FlowAIEditorPlugin::_bind_methods() {}
 
     FlowAIEditorPlugin::FlowAIEditorPlugin() {
+        if (!is_debug_build) return;
+
         flowai_inspector.instantiate();
         add_inspector_plugin(flowai_inspector);
 

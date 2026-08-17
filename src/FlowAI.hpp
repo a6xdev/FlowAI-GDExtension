@@ -1,5 +1,6 @@
 #pragma once
 
+#include <godot_cpp/classes/os.hpp>
 #include <godot_cpp/variant/utility_functions.hpp>
 #include <godot_cpp/classes/ref.hpp>
 #include <godot_cpp/variant/quaternion.hpp>
@@ -77,5 +78,6 @@ namespace FlowAI {
 	//void HelloWorld(std::string _text = "print") { return; }
 
 	bool is_debug_enabled(DebugOption p_option);
+	static bool is_debug_build() { return OS::get_singleton()->is_debug_build(); }
 	Color get_color_from_navigation_layer_mask(uint32_t _layer_mask);
 }

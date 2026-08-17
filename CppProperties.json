@@ -15,7 +15,7 @@
         "_UNICODE",
         "WIN32"
       ],
-      "compilerPath": "D:/Softwares/Visual Studio/VS 26/VC/Tools/MSVC/18.xx.xxxxx/bin/Hostx64/x64/cl.exe",
+      "compilerPath": "C:/Program Files/Microsoft Visual Studio/18/Community/VC/Tools/MSVC/18.xx.xxxxx/bin/Hostx64/x64/cl.exe",
       "cStandard": "c17",
       "cppStandard": "c++17",
       "intelliSenseMode": "windows-msvc-x64"

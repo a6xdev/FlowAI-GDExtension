@@ -309,7 +309,7 @@ namespace FlowAI {
 			m_sectors_database[coord] = runtime_sector;
 
 			// Debug
-			if (is_debug_enabled(DEBUG_VISUALIZE_SECTION)) {
+			if (is_debug_build() && is_debug_enabled(DEBUG_VISUALIZE_SECTION)) {
 				Label3D* new_label = memnew(Label3D);
 				new_label->set_text(String::num_int64(runtime_sector.get_id()));
 				new_label->set_billboard_mode(BaseMaterial3D::BillboardMode::BILLBOARD_FIXED_Y);
@@ -325,6 +325,12 @@ namespace FlowAI {
 	/////////////////////////////////////////////////////////////////////////////
 
 	void FlowAIManager::set_section_debug(bool _bool) {
+		// hide previews if is release build
+		if (!is_debug_build()) {
+			grid_preview->hide();
+			return;
+		}
+
 		switch (_bool) {
 		case true:
 			grid_preview->show();
@@ -336,6 +342,12 @@ namespace FlowAI {
 	}
 
 	void FlowAIManager::set_connections_debug(bool _bool) {
+		// hide previews if is release build
+		if (!is_debug_build()) {
+			pathnode_connections_preview->hide();
+			return;
+		}
+
 		switch (_bool) {
 		case true:
 			pathnode_connections_preview->show();

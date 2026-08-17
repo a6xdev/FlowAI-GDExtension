@@ -69,6 +69,7 @@ namespace FlowAI {
 		switch (p_what) {
 			case NOTIFICATION_ENTER_TREE: {
 				set_process(true);
+
 				if (pathnode_mesh_preview == nullptr) {
 					pathnode_mesh_preview = memnew(MeshInstance3D);
 
@@ -98,6 +99,7 @@ namespace FlowAI {
 					pathnode_name_preview->set_global_position(my_pos);
 					set_pathnode_name(get_name());
 				}
+
 				break;
 			}
 
@@ -140,6 +142,13 @@ namespace FlowAI {
 	}
 
 	void FlowAIPathnode::set_pathnode_debug(bool _bool) {
+		// hide previews if is release build
+		if (!is_debug_build()) {
+			pathnode_mesh_preview->hide();
+			pathnode_name_preview->hide();
+			return;
+		}
+
 		switch (_bool) {
 			case true:
 				pathnode_mesh_preview->show();

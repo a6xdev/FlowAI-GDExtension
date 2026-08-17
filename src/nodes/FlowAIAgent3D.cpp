@@ -53,10 +53,17 @@ namespace FlowAI {
 	void FlowAIAgent3D::_notification(int p_what) {
 		switch (p_what) {
 		case NOTIFICATION_ENTER_TREE:
+
 			path_preview = memnew(MeshInstance3D);
 			immediate_mesh.instantiate();
 			path_preview->set_mesh(immediate_mesh);
 			add_child(path_preview);
+
+			// hide previews if is debug build
+			if (!is_debug_build()) {
+				path_preview->hide();
+			}
+
 			break;
 		case NOTIFICATION_READY:
 			if (!FlowAIManager::get_singleton()) return;
