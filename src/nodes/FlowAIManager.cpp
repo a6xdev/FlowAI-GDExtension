@@ -42,6 +42,8 @@ namespace FlowAI {
 		}
 
 		switch (p_what) {
+
+		// ENTER TREE
 		case NOTIFICATION_ENTER_TREE:
 			set_process(true);
 			
@@ -74,6 +76,8 @@ namespace FlowAI {
 				_draw_sections_grid(bake_data); 
 			}
 			break;
+
+		// PROCESS
 		case NOTIFICATION_PROCESS:
 			if (m_pathnodes_database.size() > 1) {
 				_draw_pathnode_connections(m_pathnodes_database);

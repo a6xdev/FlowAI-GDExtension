@@ -70,35 +70,38 @@ namespace FlowAI {
 			case NOTIFICATION_ENTER_TREE: {
 				set_process(true);
 
-				if (pathnode_mesh_preview == nullptr) {
-					pathnode_mesh_preview = memnew(MeshInstance3D);
+				///////////////////////////
+				// PATHNODE MESH PREVIEW //
+				///////////////////////////
+				pathnode_mesh_preview = memnew(MeshInstance3D);
 
-					Ref<BoxMesh> box_mesh;
-					box_mesh.instantiate();
-					box_mesh->set_size(Vector3(0.2f, 0.2f, 0.2f));
+				Ref<BoxMesh> box_mesh;
+				box_mesh.instantiate();
+				box_mesh->set_size(Vector3(0.2f, 0.2f, 0.2f));
 
-					Ref<StandardMaterial3D> material;
-					material.instantiate();
-					material->set_albedo(Color(0.0f, 0.6f, 1.0f, 0.7f)); // blue neon with 70% of opacity
-					material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
-					material->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
+				Ref<StandardMaterial3D> material;
+				material.instantiate();
+				material->set_albedo(Color(0.0f, 0.6f, 1.0f, 0.7f)); // blue neon with 70% of opacity
+				material->set_transparency(BaseMaterial3D::TRANSPARENCY_ALPHA);
+				material->set_shading_mode(BaseMaterial3D::SHADING_MODE_UNSHADED);
 
-					box_mesh->set_material(material);
-					pathnode_mesh_preview->set_mesh(box_mesh);
+				box_mesh->set_material(material);
+				pathnode_mesh_preview->set_mesh(box_mesh);
 
-					add_child(pathnode_mesh_preview);
-				}
+				add_child(pathnode_mesh_preview);
 
-				if (pathnode_name_preview == NULL) {
-					// The text is defined on set_pathnode_name()
-					pathnode_name_preview = memnew(Label3D);
-					pathnode_name_preview->set_billboard_mode(BaseMaterial3D::BILLBOARD_FIXED_Y);
-					add_child(pathnode_name_preview);
-					Vector3 my_pos = get_global_position();
-					my_pos.y += 1.0;
-					pathnode_name_preview->set_global_position(my_pos);
-					set_pathnode_name(get_name());
-				}
+				///////////////////////////
+				// PATHNODE NAME PREVIEW //
+				///////////////////////////
+
+				// The text is defined on set_pathnode_name()
+				pathnode_name_preview = memnew(Label3D);
+				pathnode_name_preview->set_billboard_mode(BaseMaterial3D::BILLBOARD_FIXED_Y);
+				add_child(pathnode_name_preview);
+				Vector3 my_pos = get_global_position();
+				my_pos.y += 1.0;
+				pathnode_name_preview->set_global_position(my_pos);
+				set_pathnode_name(get_name());
 
 				break;
 			}
@@ -106,6 +109,7 @@ namespace FlowAI {
 			case NOTIFICATION_EXIT_TREE:
 				pathnode_mesh_preview->queue_free();
 				pathnode_name_preview->queue_free();
+
 			case NOTIFICATION_PROCESS:
 				set_pathnode_debug(is_debug_enabled(DEBUG_VISUALIZE_PATHNODE));
 		}
