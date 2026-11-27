@@ -20,12 +20,6 @@ config/icon="res://icon.svg"
 window/size/mode=3
 window/vsync/vsync_mode=0
 
-[flow_ai]
-
-layer_colors/layer_2=Color(0.89900655, 0.31447604, 0.7520234, 0.7019608)
-debug/enable_logging=true
-layer_colors/layer_1=Color(0, 0.61777407, 0.93176675, 0.7019608)
-
 [layer_names]
 
 3d_physics/layer_1="World"

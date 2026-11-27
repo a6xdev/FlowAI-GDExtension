@@ -2,6 +2,7 @@
 
 #include "FlowAI.hpp"
 #include "classes/FlowAIManager.hpp"
+#include "classes/FlowAILayer.hpp"
 #include "classes/FlowAIAgent3D.hpp"
 #include "classes/FlowAIPathnode.hpp"
 
@@ -17,6 +18,7 @@ using namespace FlowAI;
 void initialize_flow_ai_module(ModuleInitializationLevel p_level) {
     if (p_level == MODULE_INITIALIZATION_LEVEL_SCENE) {
         GDREGISTER_CLASS(FlowAI::FlowAIManager);
+        GDREGISTER_CLASS(FlowAI::FlowAILayer);
         GDREGISTER_CLASS(FlowAI::FlowAIPathnode);
         GDREGISTER_CLASS(FlowAI::FlowAIAgent3D);
         GDREGISTER_CLASS(FlowAI::FlowAIBakeData);

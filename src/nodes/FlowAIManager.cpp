@@ -1,5 +1,6 @@
 #include "../classes/FlowAIManager.hpp"
 #include "../classes/FlowAIPathnode.hpp"
+#include "../classes/FlowAILayer.hpp"
 
 #include <unordered_set>
 #include <godot_cpp/classes/engine.hpp>
@@ -12,14 +13,13 @@ Color line_color = Color(1.0f, 0.0f, 0.0f, 0.5f);
 namespace FlowAI {
 	FlowAIManager* FlowAIManager::singleton = nullptr;
 	HashMap<Vector2i, FlowAISector> m_sectors_database;
-	std::unordered_map<uint32_t, FlowAIPathnode*> m_pathnodes_database;
+	std::vector<FlowAILayer*> m_layers_database;
 
 	FlowAIManager::FlowAIManager() { if (singleton == nullptr) singleton = this; };
 	FlowAIManager::~FlowAIManager() { if (singleton == this) singleton = nullptr; };
 
 	void FlowAIManager::_bind_methods() {
 		ClassDB::bind_method(D_METHOD("bake_sections"), &FlowAIManager::bake_sections);
-		ClassDB::bind_method(D_METHOD("add_new_pathnode"), &FlowAIManager::add_new_pathnode);
 
 		ClassDB::bind_method(D_METHOD("set_bake_data"), &FlowAIManager::set_bake_data);
 		ClassDB::bind_method(D_METHOD("set_section_size"), &FlowAIManager::set_section_size);
@@ -69,23 +69,16 @@ namespace FlowAI {
 				_setup_macro_astar();
 			}
 			else {
-				get_pathnode_list(); // update "m_pathnodes_database"
+				m_layers_database = get_layers_list(); // update "m_pathnodes_database"
 			}
 
 			if (!bake_data.is_null()) { 
-				_draw_sections_grid(bake_data); 
+				//_draw_sections_grid(bake_data); 
 			}
 			break;
 
 		// PROCESS
 		case NOTIFICATION_PROCESS:
-			if (m_pathnodes_database.size() > 1) {
-				_draw_pathnode_connections(m_pathnodes_database);
-			}
-
-			// Debug
-			set_section_debug(is_debug_enabled(DEBUG_VISUALIZE_SECTION));
-			set_connections_debug(is_debug_enabled(DEBUG_VISUALIZE_CONNECTIONS));
 			break;
 		case NOTIFICATION_EXIT_TREE:
 			break;
@@ -107,6 +100,7 @@ namespace FlowAI {
 		int half_rows = section_rows / 2;
 		int nodes_baked = 0;
 		int nodes_out_of_bounds = 0;
+
 		std::vector<FlowAIPathnode*> _pathnodes = get_pathnode_list();
 		HashMap<Vector2i, FlowAISector> _sectors;
 		Dictionary main_payload;
@@ -166,75 +160,30 @@ namespace FlowAI {
 
 		bake_data->set_sectors_payload(main_payload);
 		ResourceSaver::get_singleton()->save(bake_data);
-		_draw_sections_grid(bake_data);
-
+		
 		UtilityFunctions::print("[FlowAI] Bake complete! Nodes Baked: ", nodes_baked);
 	}
-	
-	void FlowAIManager::connect_pathnodes(FlowAIPathnode* from_node, FlowAIPathnode* to_node) {
-		if (from_node && to_node) {
-			PackedInt32Array link_data = from_node->get_links();
-			if (!link_data.has(to_node->get_id())) {
-				link_data.push_back(to_node->get_id());
-				from_node->set_links(link_data);
-				UtilityFunctions::print("[FlowAI] Pathnodes '", from_node->get_name(), "' and '", to_node->get_name(), " were connected!");
+
+	void FlowAIManager::connect_pathnodes(FlowAIPathnode* _fromNode, FlowAIPathnode* _toNode) {
+		if (_fromNode && _toNode) {
+			PackedInt32Array link_data = _toNode->get_links();
+			if (!link_data.has(_toNode->get_id())) {
+				link_data.push_back(_toNode->get_id());
+				_fromNode->set_links(link_data);
+				UtilityFunctions::print("[FlowAI] Pathnodes '", _fromNode->get_name(), "' and '", _toNode->get_name(), " were connected!");
 			}
 		}
 	}
 
-	void FlowAIManager::disconnect_pathnodes(FlowAIPathnode* from_node, FlowAIPathnode* to_node) {
-		if (from_node && to_node) {
-			PackedInt32Array link_data = from_node->get_links();
-			if (link_data.has(to_node->get_id())) {
-				link_data.erase(to_node->get_id());
-				from_node->set_links(link_data);
-				UtilityFunctions::print("[FlowAI] Pathnodes '", from_node->get_name(), "' and '", to_node->get_name(), " were disconnected!");
+	void FlowAIManager::disconnect_pathnodes(FlowAIPathnode* _fromNode, FlowAIPathnode* _toNode) {
+		if (_fromNode && _toNode) {
+			PackedInt32Array link_data = _fromNode->get_links();
+			if (link_data.has(_toNode->get_id())) {
+				link_data.erase(_toNode->get_id());
+				_fromNode->set_links(link_data);
+				UtilityFunctions::print("[FlowAI] Pathnodes '", _fromNode->get_name(), "' and '", _toNode->get_name(), " were disconnected!");
 			}
 		}
-	}
-
-	// Add a new pathnode in the SceneTree.
-	// Isn't stored in the pathnode_database because we use the SceneTree itself -
-	// as the definitive source for the list of created pathnodes.
-	void FlowAIManager::add_new_pathnode(int32_t prev_pathnode_id) {
-		FlowAIPathnode* new_pathnode = memnew(FlowAIPathnode);
-		Node* scene_root = get_tree() ? get_tree()->get_edited_scene_root() : nullptr;
-
-		add_child(new_pathnode);
-		if (scene_root) new_pathnode->set_owner(scene_root);
-		else new_pathnode->set_owner(this);
-
-		uint32_t unique_id = _get_available_pathnode_id();
-		String gd_str_unique_name = "pathnode_" + String::num_int64(unique_id);
-		StringName unique_name = StringName(gd_str_unique_name);
-
-		new_pathnode->set_id(unique_id);
-		new_pathnode->set_pathnode_name(unique_name);
-
-		// If prev_pathnode_id is != -1, mean that the user is creating a new pathnode based on a selected pathnode.
-		if (prev_pathnode_id != -1) {
-			auto it = m_pathnodes_database.find(prev_pathnode_id);
-			if (it != m_pathnodes_database.end()) {
-				FlowAIPathnode* prev_pathnode = Object::cast_to<FlowAIPathnode>(it->second);
-				if (prev_pathnode) {
-					PackedInt32Array prev_node_links_arr = prev_pathnode->get_links();
-					new_pathnode->set_prev_node_id(prev_pathnode->get_id());
-					new_pathnode->set_position(prev_pathnode->get_position());
-					prev_node_links_arr.append(unique_id);
-					prev_pathnode->set_links(prev_node_links_arr);
-				}
-			}
-		}
-
-		// Select the new pathnode
-		if (Engine::get_singleton()->is_editor_hint()) {
-			if (EditorInterface* editor = EditorInterface::get_singleton()) {
-				editor->edit_node(new_pathnode);
-			}
-		}
-
-		UtilityFunctions::print("[FlowAI] Added new pathnode.");
-		return;
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -255,20 +204,17 @@ namespace FlowAI {
 		}
 
 		// Connect neighbor sections based on micro (pathnodes connections)
-		for (const auto& E : m_pathnodes_database) {
-			FlowAIPathnode* current_node = E.second;
-			if (!current_node) continue;
+		for (const auto& layer : m_layers_database) {
+			for (const auto& current_node : layer->get_pathnode_list()) {
+				if (!current_node) continue;
 
-			unsigned int current_sector_id = current_node->get_sector_id();
-			PackedInt32Array linked_ids = current_node->get_links();
+				unsigned int current_sector_id = current_node->get_sector_id();
+				PackedInt32Array linked_ids = current_node->get_links();
 
-			for (int j = 0; j < linked_ids.size(); ++j) {
-				uint32_t target_node_id = linked_ids[j];
+				for (int j = 0; j < linked_ids.size(); ++j) {
+					uint32_t target_node_id = linked_ids[j];
 
-				auto it = m_pathnodes_database.find(target_node_id);
-				if (it != m_pathnodes_database.end()) {
-					FlowAIPathnode* target_node = it->second;
-
+					FlowAIPathnode* target_node = layer->get_pathnode(target_node_id);
 					if (target_node) {
 						unsigned int target_sector_id = target_node->get_sector_id();
 						if (current_sector_id != target_sector_id) {
@@ -289,14 +235,15 @@ namespace FlowAI {
 		if (bake_data.is_null()) return;
 
 		m_sectors_database.clear();
-		m_pathnodes_database.clear();
+		m_layers_database.clear();
 
 		Dictionary main_payload = bake_data->get_sectors_payload();
 		Array sector_coords = main_payload.keys();
 
-		// update m_pathnodes_database
-		get_pathnode_list();
-
+		// update m_layers_database
+		m_layers_database = get_layers_list();
+		
+		// Create all sectors
 		for (int i = 0; i < sector_coords.size(); i++) {
 			Vector2i coord = sector_coords[i];
 			Dictionary data = main_payload[coord];
@@ -311,56 +258,12 @@ namespace FlowAI {
 				runtime_sector.micro_pathnodes.push_back((uint32_t)pathnodes_arr[j]);
 			}
 			m_sectors_database[coord] = runtime_sector;
-
-			// Debug
-			if (is_debug_build() && is_debug_enabled(DEBUG_VISUALIZE_SECTION)) {
-				Label3D* new_label = memnew(Label3D);
-				new_label->set_text(String::num_int64(runtime_sector.get_id()));
-				new_label->set_billboard_mode(BaseMaterial3D::BillboardMode::BILLBOARD_FIXED_Y);
-				new_label->set_pixel_size(0.036);
-				add_child(new_label);
-				new_label->set_global_position(Vector3(runtime_sector.center_position.x, runtime_sector.center_position.y + 3, runtime_sector.center_position.z));
-			}
 		}
 	}
 
 	///////////////////////////////////////////////////////////////////////////
 	// CALLS
 	/////////////////////////////////////////////////////////////////////////////
-
-	void FlowAIManager::set_section_debug(bool _bool) {
-		// hide previews if is release build
-		if (!is_debug_build()) {
-			grid_preview->hide();
-			return;
-		}
-
-		switch (_bool) {
-		case true:
-			grid_preview->show();
-			break;
-		case false:
-			grid_preview->hide();
-			break;
-		}
-	}
-
-	void FlowAIManager::set_connections_debug(bool _bool) {
-		// hide previews if is release build
-		if (!is_debug_build()) {
-			pathnode_connections_preview->hide();
-			return;
-		}
-
-		switch (_bool) {
-		case true:
-			pathnode_connections_preview->show();
-			break;
-		case false:
-			pathnode_connections_preview->hide();
-			break;
-		}
-	}
 
 	std::unordered_map<unsigned int, FlowAISector> FlowAIManager::get_sectors_list() {
 		std::unordered_map<unsigned int, FlowAISector> list;
@@ -375,35 +278,41 @@ namespace FlowAI {
 
 	// Works in editor and runtime
 	// Dont get pathnodes that are disabled
-	std::vector<FlowAIPathnode*> FlowAIManager::get_pathnode_list_by_layer(uint32_t _layer) {
-		// Maybe populate m_pathnodes_database here too?
+	std::vector<FlowAILayer*> FlowAIManager::get_layers_list() {
 		TypedArray<Node> my_children = get_children();
-		std::vector<FlowAIPathnode*> arr_pathnode_list;
+		std::vector<FlowAILayer*> arr_layer_list;
+		m_layers_database.clear();
 
 		for (int i = 0; i < my_children.size(); i++) {
-			FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(my_children[i]);
-			if (pathnode && !pathnode->is_disabled() && (pathnode->get_path_layers() & _layer) > 0) {
-				arr_pathnode_list.push_back(pathnode);
-			}
+			FlowAILayer* layer = Object::cast_to<FlowAILayer>(my_children[i]);
+			if (layer) { arr_layer_list.push_back(layer); }
 		}
-		return arr_pathnode_list;
+		return arr_layer_list;
 	}
 
-	// Works in editor and runtime
-	// Dont get pathnodes that are disabled
+	// Get all pathnodes from all layers.
 	std::vector<FlowAIPathnode*> FlowAIManager::get_pathnode_list() {
-		TypedArray<Node> my_children = get_children();
-		std::vector<FlowAIPathnode*> arr_pathnode_list;
-		m_pathnodes_database.clear();
-
-		for (int i = 0; i < my_children.size(); i++) {
-			FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(my_children[i]);
-			if (pathnode) {
-				m_pathnodes_database[pathnode->get_id()] = pathnode;
-				arr_pathnode_list.push_back(pathnode);
+		std::vector<FlowAIPathnode*> _pathnodes;
+		for (const auto& layer : get_layers_list()) {
+			for (const auto& pathnode : layer->get_pathnode_list()) {
+				_pathnodes.push_back(pathnode);
 			}
 		}
-		return arr_pathnode_list;
+		return _pathnodes;
+	}
+
+	FlowAILayer* FlowAIManager::get_layer_by_name(const StringName& _layer_name) {
+		if (_layer_name.is_empty()) {
+			return nullptr;
+		}
+
+		for (auto& it : get_layers_list()) {
+			if (it->get_name() == _layer_name) {
+				return it;
+			}
+		}
+
+		return nullptr;
 	}
 
 	// this function can only be used on runtime.
@@ -477,36 +386,27 @@ namespace FlowAI {
 			(p_coords.y >= -half_rows && p_coords.y < half_rows);
 	}
 
-	// Get a available ID.
-	uint32_t FlowAIManager::_get_available_pathnode_id() {
-		std::vector<FlowAIPathnode*> arr_pathnodes_list = get_pathnode_list();
-		uint32_t counter_id = 0;
-
-		while (true) {
-			if (m_pathnodes_database.find(counter_id) != m_pathnodes_database.end()) {
-				counter_id++;
-				continue;
-			}
-			return counter_id;
-		}
-	}
-
 	void FlowAIManager::_sanitize_all_links() {
-		std::vector<FlowAIPathnode*> pathnodes_list = get_pathnode_list();
+		std::vector<FlowAILayer*> layer_list = get_layers_list();
 
 		std::unordered_set<uint32_t> valid_ids;
-		for (auto pathnode : pathnodes_list) {
-			valid_ids.insert(pathnode->get_id());
+		for (auto layer : layer_list) {
+			for (auto pathnode : layer->get_pathnode_list()) {
+				valid_ids.insert(pathnode->get_id());
+			}
 		}
 
-		for (auto pathnode : pathnodes_list) {
+		for (auto layer : layer_list) {
 			PackedInt32Array  valid_links;
-			for (auto link_id : pathnode->get_links()) {
-				if (valid_ids.count(link_id) > 0) {
-					valid_links.append(link_id);
+			for (auto pathnode : layer->get_pathnode_list()) {
+				for (auto link_id : pathnode->get_links()) {
+					if (valid_ids.count(link_id) > 0) {
+						valid_links.append(link_id);
+					}
 				}
+				pathnode->set_links(valid_links);
 			}
-			pathnode->set_links(valid_links);
 		}
 	}
+
 }

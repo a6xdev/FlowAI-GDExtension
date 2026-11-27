@@ -17,7 +17,7 @@ mesh = SubResource("CapsuleMesh_s1lmg")
 shape = SubResource("CapsuleShape3D_s1lmg")
 
 [node name="FlowAIAgent3D" type="FlowAIAgent3D" parent="." unique_id=786628019]
-path_layers = 3
+layer_name = "OtherLayer"
 path_desired_distance = 1.5
 
 [node name="npc_name" type="Label3D" parent="." unique_id=631431480]

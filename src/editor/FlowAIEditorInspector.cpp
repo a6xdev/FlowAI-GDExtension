@@ -1,5 +1,6 @@
 #include "FlowAIEditor.hpp"
 #include "../classes/FlowAIManager.hpp"
+#include "../classes/FlowAILayer.hpp"
 #include "../classes/FlowAIPathnode.hpp"
 #include "../classes/FlowAIAgent3D.hpp"
 #include <godot_cpp/classes/v_box_container.hpp>
@@ -11,18 +12,19 @@ namespace FlowAI {
     FlowAIPathnode* pathnode_selected_02 = nullptr;
 
     void FlowAIEditorInspector::_bind_methods() {
-        ClassDB::bind_method(D_METHOD("signal_manager_bake"), &FlowAIEditorInspector::signal_manager_bake);
-        ClassDB::bind_method(D_METHOD("signal_manager_connect_pathnodes"), &FlowAIEditorInspector::signal_manager_connect_pathnodes);
-        ClassDB::bind_method(D_METHOD("signal_manager_disconnect_pathnodes"), &FlowAIEditorInspector::signal_manager_disconnect_pathnodes);
-        ClassDB::bind_method(D_METHOD("signal_manager_add_new_pathnode"), &FlowAIEditorInspector::signal_manager_add_new_pathnode);
-        ClassDB::bind_method(D_METHOD("signal_manager_snap_all_pathnodes_to_ground"), &FlowAIEditorInspector::signal_manager_snap_all_pathnodes_to_ground);
-        ClassDB::bind_method(D_METHOD("signal_pathnode_add_next_pathnode"), &FlowAIEditorInspector::signal_pathnode_add_next_pathnode);
-        ClassDB::bind_method(D_METHOD("signal_pathnode_snap_to_ground"), &FlowAIEditorInspector::signal_pathnode_snap_to_ground);
+        ClassDB::bind_method(D_METHOD("bake"), &FlowAIEditorInspector::bake);
+        ClassDB::bind_method(D_METHOD("connect_pathnodes"), &FlowAIEditorInspector::connect_pathnodes);
+        ClassDB::bind_method(D_METHOD("disconnect_pathnodes"), &FlowAIEditorInspector::disconnect_pathnodes);
+        ClassDB::bind_method(D_METHOD("create_pathnode"), &FlowAIEditorInspector::create_pathnode);
+        ClassDB::bind_method(D_METHOD("create_next_pathnode"), &FlowAIEditorInspector::create_next_pathnode);
+        ClassDB::bind_method(D_METHOD("snap_all_pathnodes_to_ground"), &FlowAIEditorInspector::snap_all_pathnodes_to_ground);
+        ClassDB::bind_method(D_METHOD("snap_to_ground"), &FlowAIEditorInspector::snap_to_ground);
     }
 
     bool FlowAIEditorInspector::_can_handle(Object* p_object) const {
         if (p_object == nullptr) return false;
         bool is_manager = Object::cast_to<FlowAIManager>(p_object) != nullptr;
+        bool is_layer = Object::cast_to<FlowAILayer>(p_object) != nullptr;
         bool is_pathnode = Object::cast_to<FlowAIPathnode>(p_object) != nullptr;
 
         TypedArray<Node> selected = EditorInterface::get_singleton()->get_selection()->get_selected_nodes();
@@ -32,7 +34,7 @@ namespace FlowAI {
             }
         }
 
-        return is_manager || is_pathnode;
+        return is_manager || is_pathnode || is_layer;
     }
 
     void FlowAIEditorInspector::_parse_begin(Object* p_object) {
@@ -56,6 +58,11 @@ namespace FlowAI {
             return;
         }
 
+        if (FlowAILayer* layer = Object::cast_to<FlowAILayer>(p_object)) {
+            _parse_layer(layer);
+            return;
+        }
+
         if (FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(p_object)) {
             _parse_pathnode(pathnode);
             return;
@@ -76,8 +83,8 @@ namespace FlowAI {
         btn_connect_pathnodes->set_text("Connect " + btn_title_text);
         btn_disconnect_pathnodes->set_text("Disconnect " + btn_title_text);
 
-        btn_connect_pathnodes->connect("pressed", Callable(this, "signal_manager_connect_pathnodes"));
-        btn_disconnect_pathnodes->connect("pressed", Callable(this, "signal_manager_disconnect_pathnodes"));
+        btn_connect_pathnodes->connect("pressed", Callable(this, "connect_pathnodes"));
+        btn_disconnect_pathnodes->connect("pressed", Callable(this, "disconnect_pathnodes"));
 
         add_custom_control(btn_connect_pathnodes);
         add_custom_control(btn_disconnect_pathnodes);
@@ -91,18 +98,25 @@ namespace FlowAI {
         if (!target_manager) return;
 
         Button* btn_bake = memnew(Button);
+        btn_bake->set_text("Bake");
+        btn_bake->connect("pressed", Callable(this, "bake"));
+
+        add_custom_control(btn_bake);
+    }
+
+    // ----------------------- //
+    //      FlowAILayer
+    // ----------------------- //
+    void FlowAIEditorInspector::_parse_layer(Object* target_node) {
         Button* btn_add_new_pathnode = memnew(Button);
         Button* btn_snap_all_pathnodes_to_ground = memnew(Button);
 
-        btn_bake->set_text("Bake");
         btn_add_new_pathnode->set_text("Add New Pathnode");
         btn_snap_all_pathnodes_to_ground->set_text("Snap All Pathnodes to Ground");
 
-        btn_bake->connect("pressed", Callable(this, "signal_manager_bake"));
-        btn_add_new_pathnode->connect("pressed", Callable(this, "signal_manager_add_new_pathnode"));
-        btn_snap_all_pathnodes_to_ground->connect("pressed", Callable(this, "signal_manager_snap_all_pathnodes_to_ground"));
+        btn_add_new_pathnode->connect("pressed", Callable(this, "create_pathnode"));
+        btn_snap_all_pathnodes_to_ground->connect("pressed", Callable(this, "snap_all_pathnodes_to_ground"));
 
-        add_custom_control(btn_bake);
         add_custom_control(btn_add_new_pathnode);
         add_custom_control(btn_snap_all_pathnodes_to_ground);
     }
@@ -115,11 +129,14 @@ namespace FlowAI {
         if (!target_pathnode) return;
 
         // Get the pathnode manager
-        FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_pathnode->get_parent());
+        //FlowAIManager* manager = FlowAIManager::get_singleton();
+        FlowAILayer* layer = target_pathnode->get_layer_onwer();
+
+        if (!layer) return;
 
         String prev_node_id_text = (target_pathnode->get_prev_node_id() == -1) ? "Nill" : String::num_int64(target_pathnode->get_prev_node_id());
         PackedInt32Array pathnode_links_id = target_pathnode->get_links();
-        std::vector<FlowAIPathnode*> pathnodes_list = manager->get_pathnode_list();
+        std::vector<FlowAIPathnode*> pathnodes_list = layer->get_pathnode_list();
 
         Label* lbl_id = memnew(Label);
         Label* lbl_prev_node_id = memnew(Label);
@@ -138,7 +155,7 @@ namespace FlowAI {
         btn_add->set_text("Add Next Pathnode");
         btn_snap->set_text("Snap to Ground");
 
-        // Show all nodes kinked to the selected pathnode
+        // Show all nodes linked to the selected pathnode
         for (auto link_id : target_pathnode->get_links()) {
             FlowAIPathnode* link_pathnode_ref = pathnodes_list[link_id - 1]; // An array always start in index 0. HA!
             if (link_pathnode_ref) {
@@ -149,8 +166,8 @@ namespace FlowAI {
             }
         }
 
-        btn_add->connect("pressed", Callable(this, "signal_pathnode_add_next_pathnode"));
-        btn_snap->connect("pressed", Callable(this, "signal_pathnode_snap_to_ground"));
+        btn_add->connect("pressed", Callable(this, "create_next_pathnode"));
+        btn_snap->connect("pressed", Callable(this, "snap_to_ground"));
 
         add_custom_control(lbl_id);
         add_custom_control(lbl_prev_node_id);
@@ -170,31 +187,37 @@ namespace FlowAI {
     /// ------------------------------------------
     /// SIGNALS
     /// ------------------------------------------
-    void FlowAIEditorInspector::signal_manager_bake() {
+    void FlowAIEditorInspector::bake() {
         if (FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_node)) {
             manager->bake_sections();
         }
     }
 
-    void FlowAIEditorInspector::signal_manager_connect_pathnodes() {
+    void FlowAIEditorInspector::connect_pathnodes() {
         if (pathnode_selected_01 && pathnode_selected_02) {
             FlowAIManager::get_singleton()->connect_pathnodes(pathnode_selected_01, pathnode_selected_02);
         }
     }
 
-    void FlowAIEditorInspector::signal_manager_disconnect_pathnodes() {
+    void FlowAIEditorInspector::disconnect_pathnodes() {
         if (pathnode_selected_01 && pathnode_selected_02) {
             FlowAIManager::get_singleton()->disconnect_pathnodes(pathnode_selected_01, pathnode_selected_02);
         }
     }
 
-    void FlowAIEditorInspector::signal_manager_add_new_pathnode() {
-        if (FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_node)) {
-            manager->add_new_pathnode();
+    void FlowAIEditorInspector::create_pathnode() {
+        if (FlowAILayer* layer = Object::cast_to<FlowAILayer>(target_node)) {
+            layer->create_pathnode();
         }
     }
 
-    void FlowAIEditorInspector::signal_manager_snap_all_pathnodes_to_ground() {
+    void FlowAIEditorInspector::create_next_pathnode() {
+        if (FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(target_node)) {
+            pathnode->create_next_pathnode();
+        }
+    }
+
+    void FlowAIEditorInspector::snap_all_pathnodes_to_ground() {
         if (FlowAIManager* manager = Object::cast_to<FlowAIManager>(target_node)) {
             std::vector<FlowAIPathnode*> all_pathnodes = manager->get_pathnode_list();
             for (auto child : all_pathnodes) {
@@ -203,13 +226,8 @@ namespace FlowAI {
         }
     }
 
-    void FlowAIEditorInspector::signal_pathnode_add_next_pathnode() {
-        if (FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(target_node)) {
-            pathnode->add_next_pathnode();
-        }
-    }
 
-    void FlowAIEditorInspector::signal_pathnode_snap_to_ground() {
+    void FlowAIEditorInspector::snap_to_ground() {
         if (FlowAIPathnode* pathnode = Object::cast_to<FlowAIPathnode>(target_node)) {
             pathnode->snap_to_ground();
         }

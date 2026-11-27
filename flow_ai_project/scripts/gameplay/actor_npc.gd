@@ -8,14 +8,14 @@ extends CharacterBody3D
 func _ready() -> void:
 	npc_name.text = name
 	if active:
-		agent.set_random_path(true)
+		agent.set_random_path()
 
 func _physics_process(delta: float) -> void:
 	if active:
 		if agent.is_path_complete() or Input.is_action_just_pressed("ui_accept"):
 			print("\n\n\n")
 			print("NPC NAME: ", name)
-			agent.set_random_path(false)
+			agent.set_random_path()
 		
 		var target = agent.get_next_pathnode_position()
 		var direction:Vector3 = (target - global_position).normalized()

@@ -1,5 +1,6 @@
 #include "../classes/FlowAIManager.hpp"
 #include "../classes/FlowAIPathnode.hpp"
+#include "../classes/FlowAILayer.hpp"
 
 #include <godot_cpp/classes/engine.hpp>
 #include <godot_cpp/classes/physics_ray_query_parameters3d.hpp>
@@ -19,7 +20,6 @@ namespace FlowAI {
 		ClassDB::bind_method(D_METHOD("set_id"), &FlowAIPathnode::set_id);
 		ClassDB::bind_method(D_METHOD("set_prev_node_id"), &FlowAIPathnode::set_prev_node_id);
 		ClassDB::bind_method(D_METHOD("set_links"), &FlowAIPathnode::set_links);
-		ClassDB::bind_method(D_METHOD("set_path_layers", "p_layers"), &FlowAIPathnode::set_path_layers);
 		ClassDB::bind_method(D_METHOD("set_sector_id", "_value"), &FlowAIPathnode::set_sector_id);
 		ClassDB::bind_method(D_METHOD("set_sector_coord", "_value"), &FlowAIPathnode::set_sector_coord);
 		ClassDB::bind_method(D_METHOD("set_disabled", "_value"), &FlowAIPathnode::set_disabled);
@@ -29,7 +29,6 @@ namespace FlowAI {
 		ClassDB::bind_method(D_METHOD("get_id"), &FlowAIPathnode::get_id);
 		ClassDB::bind_method(D_METHOD("get_prev_node_id"), &FlowAIPathnode::get_prev_node_id);
 		ClassDB::bind_method(D_METHOD("get_links"), &FlowAIPathnode::get_links);
-		ClassDB::bind_method(D_METHOD("get_path_layers"), &FlowAIPathnode::get_path_layers);
 		ClassDB::bind_method(D_METHOD("get_sector_id"), &FlowAIPathnode::get_sector_id);
 		ClassDB::bind_method(D_METHOD("get_sector_coord"), &FlowAIPathnode::get_sector_coord);
 		ClassDB::bind_method(D_METHOD("is_disabled"), &FlowAIPathnode::is_disabled);
@@ -41,27 +40,12 @@ namespace FlowAI {
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::INT, "sector_id", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_sector_id", "get_sector_id");
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::PACKED_INT32_ARRAY, "links", PROPERTY_HINT_NONE, "", PROPERTY_USAGE_STORAGE), "set_links", "get_links");
 
-		ClassDB::bind_method(D_METHOD("add_next_pathnode"), &FlowAIPathnode::add_next_pathnode);
-		ClassDB::bind_method(D_METHOD("snap_to_ground"), &FlowAIPathnode::snap_to_ground);
-
-		String settings_prefix = "flow_ai/navigation_3d";
-
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::BOOL, "Pathnode Disabled"), "set_disabled", "is_disabled");
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::BOOL, "Bi-Directional"), "set_bidirectional", "is_bidirectional");
 		ClassDB::add_property("FlowAIPathnode", PropertyInfo(Variant::FLOAT, "Weight Scale"), "set_weight_scale", "get_weight_scale");
-		ClassDB::add_property(
-			"FlowAIPathnode",
-			PropertyInfo(
-				Variant::INT,
-				"path_layers",
-				PROPERTY_HINT_LAYERS_3D_NAVIGATION,
-				"",
-				PROPERTY_USAGE_DEFAULT
-			),
-			"set_path_layers",
-			"get_path_layers"
-		);
 
+		ClassDB::bind_method(D_METHOD("create_next_pathnode"), &FlowAIPathnode::create_next_pathnode);
+		ClassDB::bind_method(D_METHOD("snap_to_ground"), &FlowAIPathnode::snap_to_ground);
 	}
 
 	// Create debug meshes
@@ -109,19 +93,17 @@ namespace FlowAI {
 			case NOTIFICATION_EXIT_TREE:
 				pathnode_mesh_preview->queue_free();
 				pathnode_name_preview->queue_free();
+				break;
 
 			case NOTIFICATION_PROCESS:
-				set_pathnode_debug(is_debug_enabled(DEBUG_VISUALIZE_PATHNODE));
+				break;
 		}
 	}
 
 	// CALLS
-	void FlowAIPathnode::add_next_pathnode() {
-		auto* parent = get_parent();
-		FlowAIManager* manager = Object::cast_to<FlowAIManager>(parent);
-
-		if (manager) {
-			manager->add_new_pathnode(id);
+	void FlowAIPathnode::create_next_pathnode() {
+		if (get_layer_onwer()) {
+			get_layer_onwer()->create_pathnode(id);
 		}
 	}
 
@@ -138,11 +120,6 @@ namespace FlowAI {
 			Vector3 hit_point = result["position"];
 			set_global_position(hit_point);
 		}
-	}
-
-	void FlowAIPathnode::set_path_layers(uint32_t p_layers) {
-		path_layers = p_layers;
-		_update_mesh_preview_colors();
 	}
 
 	void FlowAIPathnode::set_pathnode_debug(bool _bool) {
@@ -173,26 +150,9 @@ namespace FlowAI {
 		Ref<StandardMaterial3D> mat = mesh->surface_get_material(0);
 		if (mat.is_null()) return;
 
-		// If pathnode is disabled, set the red color
+		// If pathnode is disabled, set a red color
 		if (is_disabled()) { mat->set_albedo(Color(1.0f, 0.0f, 0.0f)); }
 
-		ProjectSettings* settings = ProjectSettings::get_singleton();
-		if (!settings) return;
-
-		// find the first active layer in our mask.
-		int active_layer = 1;
-		for (int i = 0; i < 32; ++i) {
-			if ((path_layers & (1 << i)) != 0) {
-				active_layer = i + 1;
-				break;
-			}
-		}
-
-		// Find the color of this layer in ProjectSettings
-		String color_path = "flow_ai/layer_colors/layer_" + String::num_int64(active_layer);
-		if (settings->has_setting(color_path)) {
-			Color layer_color = settings->get_setting(color_path);
-			mat->set_albedo(layer_color);
-		}
+		mat->set_albedo(get_layer_onwer()->get_layer_color());
 	}
 }

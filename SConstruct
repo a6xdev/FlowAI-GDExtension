@@ -24,10 +24,9 @@ env.Append(CPPPATH=["src/"])
 sources = [
     "src/register_types.cpp",
     "src/nodes/FlowAIManager.cpp",
+    "src/nodes/FlowAILayer.cpp",
     "src/nodes/FlowAIPathnode.cpp",
     "src/nodes/FlowAIAgent3D.cpp",
-    "src/debug/FlowAIAgentDebug.cpp",
-    "src/debug/FlowAIManagerDebug.cpp",
     "src/editor/FlowAIEditor.cpp",
     "src/editor/FlowAIEditorInspector.cpp",
     "src/resources/FlowAIBakeData.cpp",

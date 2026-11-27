@@ -31,16 +31,17 @@ namespace FlowAI {
 
 		void _parser_two_pathnodes(FlowAIPathnode* node_a, FlowAIPathnode* node_b);
 		void _parse_manager(Object* target_node);
+		void _parse_layer(Object* target_node);
 		void _parse_pathnode(Object* target_node);
 		void _parse_agent_3d(Object* target_node);
 
-		void signal_manager_bake();
-		void signal_manager_connect_pathnodes();
-		void signal_manager_disconnect_pathnodes();
-		void signal_manager_add_new_pathnode();
-		void signal_manager_snap_all_pathnodes_to_ground();
-		void signal_pathnode_add_next_pathnode();
-		void signal_pathnode_snap_to_ground();
+		void bake();
+		void connect_pathnodes();
+		void disconnect_pathnodes();
+		void create_pathnode();
+		void create_next_pathnode();
+		void snap_all_pathnodes_to_ground();
+		void snap_to_ground();
 	};
 
 	// FlowAI Editor
@@ -58,8 +59,6 @@ namespace FlowAI {
 	private:
 		Object* node_selected = nullptr;
 		Ref<FlowAIEditorInspector> flowai_inspector;
-
-		void _setup_project_settings();
 	};
 }
 
